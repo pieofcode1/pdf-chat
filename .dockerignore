@@ -1,0 +1,17 @@
+.git
+__pycache__
+**/__pycache__
+devenv
+**/.git
+**/.gitignore
+**/.vscode
+**/coverage
+**/.aws
+**/.ssh
+Dockerfile
+README.md
+docker-compose.yml
+**/.DS_Store
+**/venv
+**/env
+*.ipynb
