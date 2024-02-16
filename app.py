@@ -65,13 +65,21 @@ def main():
     )
 
     st.write("\n\n")
+    st.markdown("#### Typical GenAI scenarios")
+    st.write(
+        """
+        This slide summerizes the common use cases and their relationship with implementation time and complexity. 
+        """
+    )
+    st.image("img/scenarios.png")
+
+    st.write("\n\n")
     st.markdown("#### Reference Architecture")
     st.write(
         """
         This is a typical architecture of a RAG based app leveraging Azure Platform Services. 
         """
     )
-
     st.image("img/arch.png")
 
 

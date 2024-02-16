@@ -38,11 +38,7 @@ This accelarator app utilizes RAG for chatbot functionality. It demonstrates the
 
 ## Install the packages
 
-Install the packages required for building the app. This includes the user interface components and the LLMs we will be working with.
-
-`pip install streamlit pypdf2 langchain python-dotenv faiss-cpu openai huggingface_hub tiktoken`
-
-This is the command to install packages from requirements.txt file
+Install the packages required for building the app from requirements.txt file.
 
 `pip install -r .\requirements.txt`
 
