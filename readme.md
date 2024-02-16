@@ -1,6 +1,28 @@
-# PDF-chatbot application using LangChain
+# RAG Accelerator leveraging Azure OpenAI, AI Search & LangChain
 
-Application code for Chatbot created using OpenAI with your own PDF files
+Retrieval Augmented Generation (RAG) is a technique used in natural language processing to enhance the performance of chatbots and question-answering systems. It combines the power of retrieval-based models and generative models to provide more accurate and contextually relevant responses.
+
+In the context of Azure, RAG can be implemented using Azure OpenAI, Azure Cognitive Search, and Azure LangChain. Azure OpenAI provides the language model capabilities, Azure Cognitive Search enables efficient indexing and retrieval of information, and Azure LangChain helps with language translation and understanding.
+
+This accelarator app utilizes RAG for chatbot functionality. It demonstrates the power of Azure OpenAI and Cognitive services to extract the insights from variety of enterprise data sources such as PDF documents, Images, SQL Databases etc.
+
+# Required Azure Services
+
+- Azure OpenAI
+- Azure Cognitive Search
+- Azure Container Registry
+- [Optional] Azure WebApps
+- [Optional] SQL Database
+- [Optional] Azure Bing Search 
+
+# Tools
+
+- Docker
+- Python
+- Git
+- VS Code or any other Python IDE
+
+# Running app in your local environment
 
 ## Create a new Python environment
 

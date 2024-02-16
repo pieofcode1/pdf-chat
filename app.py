@@ -41,23 +41,25 @@ def main():
 
     st.set_page_config(page_title="RAG App Accelerator", page_icon=":books:")
 
-    st.image("img/Cognitive-Search.svg", width=78)
+    # st.image("img/Cognitive-Search.svg", width=78)
 
     st.write(
         """
-        # RAG App Accelerator
+        ## RAG App Accelerator ✨
 
-        Welcome! 👋 This accelerator shows various solutions I am working on to showcase the power of 
-        Azure OpenAI and Cognitive Search to build RAG (Retrieval Augmented Generation) based solutions. 
-        Each page is a demonstration of specific feature or capability of various patterns/approaches of LLM Apps.
-        ✨
+        Welcome! 👋 Retrieval Augmented Generation (RAG) is a technique used in natural language processing to enhance the performance of chatbots and question-answering systems. It combines the power of retrieval-based models and generative models to provide more accurate and contextually relevant responses.
+
+        In the context of Azure, RAG can be implemented using Azure OpenAI, Azure Cognitive Search, and Azure LangChain. Azure OpenAI provides the language model capabilities, Azure Cognitive Search enables efficient indexing and retrieval of information, and Azure LangChain helps with language translation and understanding.
+
+        This accelarator app utilizes RAG for chatbot functionality. It demonstrates the power of Azure OpenAI and Cognitive services to extract the insights from variety of enterprise data sources such as PDF documents, Images, SQL Databases etc.
+        
         """
     )
 
     st.info(
         """
         Need to include a tpoic or a capability that's not on here?
-        [Let me know by opening a GitHub issue!](https://github.com/pieofcode/pdf-chat-app/issues)
+        [Let me know by opening a GitHub issue!](https://github.com/pieofcode1/pdf-chat/issues)
         """,
         icon="👾",
     )

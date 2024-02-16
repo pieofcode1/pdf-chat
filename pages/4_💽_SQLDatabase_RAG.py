@@ -29,7 +29,7 @@ def main():
         st.session_state.query_agent = None
         st.session_state.query_agent = create_sql_agent_executor(executor_type="db_chain")
 
-    st.header("Search Database :minidisc:", divider='blue')
+    st.header("Chat with your Database :minidisc:", divider='blue')
     st.session_state.sql_agent = create_sql_agent_executor(executor_type="db_chain")
 
     messages = st.container()
