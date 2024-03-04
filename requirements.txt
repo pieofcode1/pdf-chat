@@ -1,5 +1,6 @@
 docx2txt==0.8
 PyPDF2
+pyodbc
 pypdf==3.17.4
 python-dotenv
 faiss-cpu
@@ -7,7 +8,7 @@ openai==1.12.0
 langchain==0.1.5
 langchain-community==0.0.19
 langchain-core==0.1.23
-langchain_experimental
+langchain_experimental==0.0.49
 langchain-openai==0.0.6
 openapi-schema-pydantic==1.2.4
 pandas==2.1.3

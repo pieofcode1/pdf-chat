@@ -15,8 +15,6 @@ from langchain_openai import AzureOpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from azure.core.credentials import AzureKeyCredential
-from azure.search.documents import SearchClient, SearchIndexingBufferedSender
-from azure.search.documents.indexes import SearchIndexClient
 from langchain.vectorstores.azuresearch import AzureSearch
 from langchain.schema import format_document
 from langchain.prompts import ChatPromptTemplate

@@ -6,14 +6,15 @@ import dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient, SearchIndexingBufferedSender
 from azure.search.documents.indexes import SearchIndexClient
+from azure.search.documents.indexes.models import *
+# from azure.search.documents.indexes.models import (
+#     SemanticSettings,
+#     SemanticConfiguration,
+#     PrioritizedFields,
+#     SemanticField
+# )
 from langchain.vectorstores.azuresearch import AzureSearch
 from langchain_openai.embeddings import AzureOpenAIEmbeddings
-from azure.search.documents.indexes.models import (
-    SemanticSettings,
-    SemanticConfiguration,
-    PrioritizedFields,
-    SemanticField
-)
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.text_splitter import TextSplitter
