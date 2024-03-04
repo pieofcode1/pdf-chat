@@ -23,7 +23,6 @@ from operator import itemgetter
 from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough, RunnableMap
 from langchain.docstore.document import Document
-import pyodbc
 from sqlalchemy import create_engine
 from langchain.sql_database import SQLDatabase
 from sqlalchemy.engine.url import URL
