@@ -10,9 +10,8 @@ from langchain.schema import (
     HumanMessage,
     SystemMessage
 )
-
+from langchain_chroma import Chroma
 from langchain_community.callbacks import get_openai_callback
-
 from html_template import css, bot_template, user_template
 
 env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"

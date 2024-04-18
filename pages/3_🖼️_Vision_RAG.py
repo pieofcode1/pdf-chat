@@ -50,7 +50,7 @@ def handle_user_input(question):
     print(response)
     st.session_state.chat_history.append({
         'question': question,
-        'answer': response['choices'][0]['message']['content']
+        'answer': response.choices[0].message.content
     })
     # st.write(response)
     # print(f"Chat History Type: {type(st.session_state.chat_history)}")

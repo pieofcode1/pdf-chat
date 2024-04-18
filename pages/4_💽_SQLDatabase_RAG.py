@@ -33,10 +33,10 @@ def main():
     st.session_state.sql_agent = create_sql_agent_executor(executor_type="db_chain")
 
     messages = st.container()
-    if prompt := st.chat_input("Say something"):
+    if prompt := st.chat_input("Ask your question"):
         response = st.session_state.sql_agent.invoke({"input": prompt})
         messages.chat_message("user").write(prompt)
-        messages.chat_message("assistant").write(f"{response}")
+        messages.chat_message("assistant").write(f"{response['output']}")
 
     with st.sidebar:
         st.header(":blue[Current Database]")

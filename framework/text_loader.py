@@ -29,6 +29,7 @@ from sqlalchemy.engine.url import URL
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain.chains import create_sql_query_chain
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
+from openai import AzureOpenAI
 
 from .prompts import MSSQL_PROMPT
 
@@ -319,78 +320,62 @@ def sort_by_first_element(arr):
 
 def gpt4v_completion(image_data, question, history=None):
 
+    # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=python%2Csystem-assigned%2Cresource#use-a-local-image
+
     # To convert to a string based IO:
     # stringio = StringIO(image_data.decode("utf-8"))
-    b64_encoded_image = base64.b64encode(image_data).decode('utf-8')
+    # b64_encoded_image = base64.b64encode(image_data).decode('utf-8')
+    b64_encoded_image = base64.b64encode(image_data).decode('ascii')
     # print(f"b64_encoded_image: {b64_encoded_image}")
     # Configuration
-    GPT4V_KEY = os.environ["AZURE_OPENAI_API_KEY_VISION"]
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": GPT4V_KEY,
+    api_base = os.getenv("AZURE_OPENAI_ENDPOINT_VISION")
+    api_key= os.getenv("AZURE_OPENAI_API_KEY_VISION")
+    deployment_name = os.getenv("AZURE_GPT4_VISION_DEPLOYMENT_NAME")
+    api_version = os.getenv("AZURE_OPENAI_API_VERSION_VISION") # this might change in the future
+
+    client = AzureOpenAI(
+        api_key=api_key,  
+        api_version=api_version,
+        base_url=f"{api_base}/openai/deployments/{deployment_name}"
+    )
+    enhancements = {
+        "ocr": {
+            "enabled": True
+        },
+        "grounding": {
+            "enabled": True
+        }
     }
-
-    base_url = f"{os.environ['AZURE_OPENAI_ENDPOINT_VISION']}openai/deployments/{os.environ['AZURE_GPT4_VISION_DEPLOYMENT_NAME']}"
-    # Prepare endpoint, headers, and request body
-    GPT4V_ENDPOINT = f"{base_url}/chat/completions?api-version=2023-12-01-preview"
-
-    # Payload for the request
-    payload = {
-        "messages": [
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "You are an AI assistant that helps people find information."
-                    }
-                ]
-            },
-            {
-                "role": "user", "content":
-                [
-                    {
-                        "type": "text",
-                        "text": question
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{b64_encoded_image}"
-                        }
-                    }
-                ]
-            }
-        ],
-        "temperature": 0.7,
-        "top_p": 0.95,
-        "max_tokens": 800
-    }
-
-    # Send request
-    try:
-        response = requests.post(GPT4V_ENDPOINT, headers=headers, json=payload)
-        print(response.json())
-        # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
-        response.raise_for_status()
-
-        # Handle the response as needed (e.g., print or process)
-        print(response.json())
-        return response.json()
-
-    except requests.RequestException as e:
-        raise SystemExit(f"Failed to make the request. Error: {e}")
-
     
-    except Exception as e:
-        raise SystemExit(f"Unknown error. Error: {e}") 
+    response = client.chat.completions.create(
+        model=deployment_name,
+        messages=[
+            { "role": "system", "content": "You are a helpful assistant." },
+            { "role": "user", "content": [  
+                { 
+                    "type": "text", 
+                    "text": "Describe this picture:" 
+                },
+                { 
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{b64_encoded_image}"
+                    }
+                }
+            ] } 
+        ],
+        max_tokens=2000 
+    )
+    print(response)
+
+    return response
 
 
 def create_sql_agent_executor(executor_type="db_chain", verbose=True):
 
     llm = AzureChatOpenAI(
         openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-        azure_deployment=os.environ["AZURE_CHATGPT_DEPLOYMENT_NAME"],
+        azure_deployment=os.environ["AZURE_GPT4_TURBO_DEPLOYMENT_NAME"],
     )
 
     db_config = {
@@ -408,10 +393,12 @@ def create_sql_agent_executor(executor_type="db_chain", verbose=True):
 
     db = SQLDatabase.from_uri(db_url)
     if executor_type == 'db_chain':
-        agent_executor = create_sql_agent(llm, db=db, verbose=verbose)
+        agent_executor = create_sql_agent(llm, db=db, verbose=verbose, return_intermediate_steps=True)
     elif executor_type == 'query_chain':
-        agent_executor = create_sql_query_chain(llm, db, prompt=MSSQL_PROMPT)
+        agent_executor = create_sql_query_chain(llm, db, prompt=MSSQL_PROMPT, verbose=verbose, return_intermediate_steps=True)
     else: 
         raise ValueError(f"Invalid executor type: {type}")
     
     return agent_executor
+
+
