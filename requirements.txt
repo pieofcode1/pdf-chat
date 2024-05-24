@@ -22,3 +22,4 @@ streamlit-agraph==0.0.45
 gremlinpython==3.7.1
 azure-storage-blob==12.19.0
 azure-cosmos==4.5.1
+azure-ai-documentintelligence

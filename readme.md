@@ -6,12 +6,19 @@ In the context of Azure, RAG can be implemented using Azure OpenAI, Azure Cognit
 
 This accelarator app utilizes RAG for chatbot functionality. It demonstrates the power of Azure OpenAI and Cognitive services to extract the insights from variety of enterprise data sources such as PDF documents, Images, SQL Databases etc.
 
+
+# Generic Architecutre in Azure
+
+![Generic Architecture in Azure](img/arch.png)
+
+
 # Required Azure Services
 
 - Azure OpenAI
 - Azure Cognitive Search
 - Azure Container Registry
-- [Optional] Azure WebApps
+- Azure CosmosDB (NoSQL API)
+- Azure App Service
 - [Optional] SQL Database
 - [Optional] Azure Bing Search 
 
