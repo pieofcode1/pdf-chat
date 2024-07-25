@@ -10,7 +10,9 @@ env:
 jobs:
   
   build-deploy-image:
+  
     runs-on: ubuntu-latest
+    
     steps:
       # Checkout the repo
       - name: 'Checkout Github Action'
