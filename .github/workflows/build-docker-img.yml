@@ -23,7 +23,7 @@ jobs:
           username: ${{secrets.AZ_SP_NAME}}
           password: ${{secrets.AZ_SP_SECRET}}
 
-      - run: docker build . -t {{env.IMAGE_NAME}} -f ./dockerfile
+      - run: docker build . -t ${{env.IMAGE_NAME}} -f ./dockerfile
 
       - run: docker push ${{env.IMAGE_NAME}}
           
