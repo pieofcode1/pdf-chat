@@ -20,8 +20,8 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: ${{env.ACR_LOGON_SERVER}}
-          username: ${{secrets.AZ_CONTAINER_REGISTRY_USER}}
-          password: ${{secrets.AZ_CONTAINER_REGISTRY_PWD}}
+          username: ${{secrets.AZ_SP_NAME}}
+          password: ${{secrets.AZ_SP_SECRET}}
 
       - run: docker build . -t ${{env.IMAGE_NAME}} -f ./dockerfile
 
