@@ -44,10 +44,14 @@ jobs:
 
       - uses: actions/checkout@main
 
+      # Az login
+      - uses: Azure/login@v2.1.0
+        with: 
+          creds: '${{secrets.AZURE_CREDENTIALS}}'
+
       # Set the target Azure Kubernetes Service (AKS) Cluster
       - uses: azure/aks-set-context@v3.0
         with:
-          creds: '${{secrets.AZURE_CREDENTIALS}}'
           cluster-name: ${{secrets.AKS_NAME}}
           resource-group: ${{secrets.AKS_RESOURCE_GROUP}}
 
