@@ -73,7 +73,7 @@ jobs:
         with: 
           manifests: |
             deploy/manifests/deployment.yml
-            deploy/manifests/service.yml
+            deploy/manifests/service-lb.yml
           images: |
             ${{env.IMAGE_NAME}}
           imagepullsecrets: |
