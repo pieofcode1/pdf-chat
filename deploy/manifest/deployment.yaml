@@ -21,7 +21,7 @@ spec:
       containers:
       - name: pdf-chat-app
         image: dataplat.azurecr.io/aoai/pdf-chat-app:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - containerPort: 8501
         resources:
