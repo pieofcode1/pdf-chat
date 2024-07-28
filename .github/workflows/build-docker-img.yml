@@ -72,8 +72,8 @@ jobs:
       - uses: azure/k8s-deploy@v4.9
         with: 
           manifests: |
-            deploy/manifests/deployment.yml
-            deploy/manifests/service-lb.yml
+            deploy/manifest/deployment.yml
+            deploy/manifest/service-lb.yml
           images: |
             ${{env.IMAGE_NAME}}
           imagepullsecrets: |
