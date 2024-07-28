@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdf-chat-app
+  labels:
+    app: pdf-chat-app
+    rel: stable
+    costCenter: B0012C
+
+spec:
+  replicas: 2
+  minReadySeconds: 10
+  selector:
+    matchLabels:
+      app: pdf-chat-app
+  template:
+    metadata:
+      labels:
+        app: pdf-chat-app
+    spec:
+      containers:
+      - name: pdf-chat-app
+        image: dataplat.azurecr.io/aoai/pdf-chat-app:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8501
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "250m"

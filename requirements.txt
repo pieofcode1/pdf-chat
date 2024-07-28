@@ -21,5 +21,12 @@ azure-search-documents==11.4.0b8
 streamlit-agraph==0.0.45
 gremlinpython==3.7.1
 azure-storage-blob==12.19.0
-azure-cosmos==4.5.1
+azure-cosmos==4.7.0
 azure-ai-documentintelligence
+azure-cognitiveservices-speech==1.37.0
+opencv-python==4.10.0.82
+moviepy==1.0.3
+pillow
+faker==25.8.0
+mlflow 
+databricks-sql-connector

@@ -4,6 +4,7 @@ devenv
 *$py.class
 **/__pycache__
 .env.local
+temp
 
 # Distribution / packaging 
 .Python build/ 

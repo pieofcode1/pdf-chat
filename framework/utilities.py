@@ -3,6 +3,8 @@ import time
 import functools
 from datetime import datetime
 import csv
+from langchain.callbacks.base import BaseCallbackHandler
+
 
 def timer(func):
     """Print the run timespan of the decorated function"""
@@ -54,3 +56,27 @@ def write_json(fieldnames, rows, filename):
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+class ChainLogger(BaseCallbackHandler):
+    
+    def __init__(self):
+        self.logs = []
+
+    def on_chain_start(self, serialized, **kwargs):
+        self.logs.append(f"Starting chain: {serialized}")
+
+    def on_chain_end(self, output, **kwargs):
+        self.logs.append(f"Finished chain with output: {output}")
+
+    def on_tool_start(self, serialized, **kwargs):
+        self.logs.append(f"Starting tool: {serialized}")
+
+    def on_tool_end(self, output, **kwargs):
+        self.logs.append(f"Finished tool with output: {output}")
+
+    def on_agent_action(self, action, **kwargs):
+        self.logs.append(f"Agent action: {action}")
+
+    def on_agent_finish(self, output, **kwargs):
+        self.logs.append(f"Agent finished with output: {output}")

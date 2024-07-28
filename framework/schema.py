@@ -1,8 +1,7 @@
 import uuid
 from pydantic import BaseModel, ValidationError
 from datetime import datetime
-from typing import Annotated, Dict, List, Literal, Tuple
-
+from typing import Annotated, Dict, List, Literal, Tuple, Optional
 
 class TokenUsage(BaseModel):
     prompt_tokens: int
@@ -96,3 +95,48 @@ class ContextInfo(BaseModel):
     vector_store: str
     _ts: int
     _etag: str
+
+
+class MediaAssetInfo(BaseModel):
+    id: str
+    asset_name: str
+    blob_video_key: str
+    blob_audio_key: Optional[str] = None
+    blob_video_url: str
+    blob_audio_url: Optional[str] = None
+    frame_offset: int
+    frame_count: int
+    duration: int
+    total_frames: int
+    audio_transcription: Optional[str] = None
+    audio_summary: Optional[str] = None
+    video_summary: Optional[str] = None
+    created_at: str = datetime.now().isoformat()
+
+
+
+class VideoFrameSummary(BaseModel):
+    id: str
+    frame_id: int
+    asset_name: str
+    url: str
+    summary: str = None
+    created_at: str = datetime.now().isoformat()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

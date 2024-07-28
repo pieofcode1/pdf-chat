@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-nodeport
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8501
+    nodePort: 31000
+  selector:
+    app: pdf-chat-app
+  type: NodePort

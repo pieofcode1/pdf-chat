@@ -32,6 +32,7 @@ from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from openai import AzureOpenAI
 
 from .prompts import MSSQL_PROMPT
+from .utilities import ChainLogger
 
 import dotenv
 from .az_ai_search_helper import *
@@ -48,7 +49,7 @@ with open(env_file_path) as f:
 openai.api_type: str = "azure"
 openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
 openai.api_base = os.getenv("AZURE_OPENAI_ENDPOINT")
-openai.api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+openai.api_version = os.getenv("OPENAI_API_VERSION")
 model: str = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME")
 
 # openai_client = openai.AzureOpenAI(
@@ -207,7 +208,7 @@ def get_conversation_chain(vector_store):
         azure_deployment=os.environ["AZURE_CHATGPT_DEPLOYMENT_NAME"],
         azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         openai_api_type="azure",
-        openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        openai_api_version=os.environ["OPENAI_API_VERSION"],
         openai_api_key=os.environ["AZURE_OPENAI_API_KEY"]
     )
 
@@ -236,7 +237,7 @@ def get_llm_chain_v2(prompt, vector_store, deployment_name="", top_k=5):
         azure_deployment=deployment_name,
         azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         openai_api_type="azure",
-        openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        openai_api_version=os.environ["OPENAI_API_VERSION"],
         openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
         temperature=0.5
     )
@@ -273,7 +274,7 @@ def get_llm_chain(prompt, vector_store):
         azure_deployment=os.environ["AZURE_CHATGPT_DEPLOYMENT_NAME"],
         azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         openai_api_type="azure",
-        openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        openai_api_version=os.environ["OPENAI_API_VERSION"],
         openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
         temperature=0.5
     )
@@ -328,24 +329,16 @@ def gpt4v_completion(image_data, question, history=None):
     b64_encoded_image = base64.b64encode(image_data).decode('ascii')
     # print(f"b64_encoded_image: {b64_encoded_image}")
     # Configuration
-    api_base = os.getenv("AZURE_OPENAI_ENDPOINT_VISION")
-    api_key= os.getenv("AZURE_OPENAI_API_KEY_VISION")
-    deployment_name = os.getenv("AZURE_GPT4_VISION_DEPLOYMENT_NAME")
-    api_version = os.getenv("AZURE_OPENAI_API_VERSION_VISION") # this might change in the future
+    api_base = os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_key= os.getenv("AZURE_OPENAI_API_KEY")
+    deployment_name = os.getenv("AZURE_GPT4_TURBO_DEPLOYMENT_NAME")
+    api_version = os.getenv("OPENAI_API_VERSION") # this might change in the future
 
     client = AzureOpenAI(
         api_key=api_key,  
         api_version=api_version,
         base_url=f"{api_base}/openai/deployments/{deployment_name}"
     )
-    enhancements = {
-        "ocr": {
-            "enabled": True
-        },
-        "grounding": {
-            "enabled": True
-        }
-    }
     
     response = client.chat.completions.create(
         model=deployment_name,
@@ -354,7 +347,7 @@ def gpt4v_completion(image_data, question, history=None):
             { "role": "user", "content": [  
                 { 
                     "type": "text", 
-                    "text": "Describe this picture:" 
+                    "text": question 
                 },
                 { 
                     "type": "image_url",
@@ -364,36 +357,54 @@ def gpt4v_completion(image_data, question, history=None):
                 }
             ] } 
         ],
-        max_tokens=2000 
+        max_tokens=4000 
     )
     print(response)
 
     return response
 
 
-def create_sql_agent_executor(executor_type="db_chain", verbose=True):
+def create_sql_agent_executor(executor_type="db_chain", source="sqldb", verbose=True):
+
+    handler = ChainLogger()
 
     llm = AzureChatOpenAI(
-        openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        openai_api_version=os.environ["OPENAI_API_VERSION"],
         azure_deployment=os.environ["AZURE_GPT4_TURBO_DEPLOYMENT_NAME"],
     )
 
-    db_config = {
-        'drivername': 'mssql+pyodbc',
-        'username': os.environ["SQL_SERVER_USERNAME"] + '@' + os.environ["SQL_SERVER_ENDPOINT"],
-        'password': os.environ["SQL_SERVER_PASSWORD"],
-        'host': os.environ["SQL_SERVER_ENDPOINT"],
-        'port': 1433,
-        'database': os.environ["SQL_SERVER_DATABASE"],
-        'query': {'driver': 'ODBC Driver 17 for SQL Server'}
-    }
+    if source == 'sqldb':
+        print("Connecting to SQL Server")
+        db_config = {
+            'drivername': 'mssql+pyodbc',
+            'username': os.environ["SQL_SERVER_USERNAME"] + '@' + os.environ["SQL_SERVER_ENDPOINT"],
+            'password': os.environ["SQL_SERVER_PASSWORD"],
+            'host': os.environ["SQL_SERVER_ENDPOINT"],
+            'port': 1433,
+            'database': os.environ["SQL_SERVER_DATABASE"],
+            'query': {'driver': 'ODBC Driver 17 for SQL Server'}
+        }
 
-    # Create a URL object for connecting to the database
-    db_url = URL.create(**db_config) 
+        # Create a URL object for connecting to the database
+        db_url = URL.create(**db_config) 
 
-    db = SQLDatabase.from_uri(db_url)
+        db = SQLDatabase.from_uri(db_url)
+
+    elif source == "databricks":
+        print("Connecting to Databricks cluster")
+        db = SQLDatabase.from_databricks(
+            catalog="samples",
+            schema="tpch",
+            cluster_id="0517-204837-79tfqy9o",
+            host=os.environ["DATABRICKS_HOST"],
+            api_token=os.environ["DATABRICKS_TOKEN"]
+        )
+        
+    else:
+        raise ValueError(f"Invalid source: {source}")
+
     if executor_type == 'db_chain':
-        agent_executor = create_sql_agent(llm, db=db, verbose=verbose, return_intermediate_steps=True)
+        agent_executor = create_sql_agent(llm, db=db, verbose=verbose, return_intermediate_steps=True, agent_type="openai-tools", callbacks=[handler])
     elif executor_type == 'query_chain':
         agent_executor = create_sql_query_chain(llm, db, prompt=MSSQL_PROMPT, verbose=verbose, return_intermediate_steps=True)
     else: 

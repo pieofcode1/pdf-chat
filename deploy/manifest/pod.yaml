@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pdf-chat-app
+  labels:
+    app: pdf-chat-app
+    rel: stable
+    costCenter: B0012C
+spec:
+  containers:
+  - name: pdf-chat-app
+    image: dataplat.azurecr.io/aoai/pdf-chat-app:latest
+    imagePullPolicy: Never
+    ports:
+    - containerPort: 8501 
+    resources:
+      limits:
+        memory: "512Mi"
+        cpu: "250m"

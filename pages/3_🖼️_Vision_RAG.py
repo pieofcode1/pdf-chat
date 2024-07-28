@@ -26,18 +26,6 @@ with open(env_file_path) as f:
     dotenv.load_dotenv(dotenv_path=env_file_path)
 # print(os.environ)
 
-openai.api_type: str = "azure"
-openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-openai.api_base = os.getenv("AZURE_OPENAI_ENDPOINT")
-openai.api_version = os.getenv("AZURE_OPENAI_API_VERSION")
-model: str = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME")
-
-openai_client = AzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
-)
-
 
 def handle_user_input(question):
     if not st.session_state.image_data:
