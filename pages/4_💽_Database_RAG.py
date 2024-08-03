@@ -75,7 +75,7 @@ def main():
             st.session_state.source_engine = "Databricks"
         
             # Connect to the selected database
-            if st.button(":blue[Connect to Databricks]", type="primary"):
+            if st.button("Connect to Databricks", type="primary"):
                 with st.spinner("Processing"):
                     print(f"Connecting to {st.session_state.source_engine}")
                     st.session_state.sql_agent = create_sql_agent_executor(executor_type="db_chain", source="databricks")

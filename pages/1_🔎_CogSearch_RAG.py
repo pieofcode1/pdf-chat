@@ -32,7 +32,7 @@ def handle_user_input(question):
                 "Please upload your documents and hit Process to build vector store.")
             return
 
-        response = st.session_state.conversation({"question": question})
+        response = st.session_state.conversation.invoke({"question": question})
         st.session_state.chat_history = response['chat_history']
         # st.write(response)
         # print(f"Chat History Type: {type(st.session_state.chat_history)}")

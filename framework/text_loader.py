@@ -6,7 +6,7 @@ import requests
 import langchain
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential, wait_random_exponential
 from PyPDF2 import PdfReader
-from langchain.document_loaders.csv_loader import CSVLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import faiss as FAISS
 from langchain_community.document_loaders import PyPDFLoader
@@ -15,7 +15,7 @@ from langchain_openai import AzureOpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from azure.core.credentials import AzureKeyCredential
-from langchain.vectorstores.azuresearch import AzureSearch
+from langchain_community.vectorstores import AzureSearch
 from langchain.schema import format_document
 from langchain.prompts import ChatPromptTemplate
 from langchain.prompts.prompt import PromptTemplate
@@ -24,7 +24,7 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough, RunnableMap
 from langchain.docstore.document import Document
 from sqlalchemy import create_engine
-from langchain.sql_database import SQLDatabase
+from langchain_community.utilities import SQLDatabase
 from sqlalchemy.engine.url import URL
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain.chains import create_sql_query_chain
