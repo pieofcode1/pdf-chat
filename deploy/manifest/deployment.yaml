@@ -20,8 +20,11 @@ spec:
     spec:
       containers:
       - name: pdf-chat-app
-        image: dataplat.azurecr.io/aoai/pdf-chat-app:latest
-        imagePullPolicy: Always
+        envFrom:
+          - configMapRef:
+              name: pdf-chat-app-configmap
+        image: dataplat.azurecr.io/aoai/pdf-chat-app:05180f5e71e85918451cf773c0e9e61188493614
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8501
         resources:

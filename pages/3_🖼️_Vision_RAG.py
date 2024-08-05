@@ -17,14 +17,14 @@ from langchain_community.callbacks import get_openai_callback
 
 from html_template import css, bot_template, user_template
 
-env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
+# env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
 
-# Load env settings
-env_file_path = Path(f"./.env.{env_name}")
-print(f"Loading environment from: {env_file_path}")
-with open(env_file_path) as f:
-    dotenv.load_dotenv(dotenv_path=env_file_path)
-# print(os.environ)
+# # Load env settings
+# env_file_path = Path(f"./.env.{env_name}")
+# print(f"Loading environment from: {env_file_path}")
+# with open(env_file_path) as f:
+#     dotenv.load_dotenv(dotenv_path=env_file_path)
+# # print(os.environ)
 
 
 def handle_user_input(question):

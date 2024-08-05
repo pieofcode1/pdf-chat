@@ -13,7 +13,7 @@ from azure.search.documents.indexes.models import *
 #     PrioritizedFields,
 #     SemanticField
 # )
-from langchain.vectorstores.azuresearch import AzureSearch
+from langchain_community.vectorstores import AzureSearch
 from langchain_openai.embeddings import AzureOpenAIEmbeddings
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
@@ -25,14 +25,15 @@ from azure.search.documents.models import *
 from azure.search.documents.indexes.models import *
 
 
-env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
-
-# Load env settings
-env_file_path = Path(f"./.env.{env_name}")
-print(f"Loading environment from: {env_file_path}")
-with open(env_file_path) as f:
-    dotenv.load_dotenv(dotenv_path=env_file_path)
-# print(os.environ)
+# Load env settings if not already loaded
+if os.getenv("AZURE_OPENAI_ENDPOINT") is None:
+    env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
+    # Load env settings
+    env_file_path = Path(f"./.env.{env_name}")
+    print(f"Loading environment from: {env_file_path}")
+    with open(env_file_path) as f:
+        dotenv.load_dotenv(dotenv_path=env_file_path)
+    # print(os.environ)
 
 
 def get_az_search_index_client():

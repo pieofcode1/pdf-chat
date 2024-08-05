@@ -15,26 +15,16 @@ from framework.az_ai_search_helper import *
 
 from html_template import css, bot_template, user_template
 
-env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
 
-# Load env settings
-env_file_path = Path(f"./.env.{env_name}")
-print(f"Loading environment from: {env_file_path}")
-with open(env_file_path) as f:
-    dotenv.load_dotenv(dotenv_path=env_file_path)
-# print(os.environ)
-
-# openai.api_type: str = "azure"
-# openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-# openai.api_base = os.getenv("AZURE_OPENAI_ENDPOINT")
-# openai.api_version = os.getenv("AZURE_OPENAI_API_VERSION")
-# model: str = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME")
-
-# openai_client = AzureOpenAI(
-#     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-#     api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-#     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
-# )
+# Load env settings if not already loaded
+if os.getenv("AZURE_OPENAI_ENDPOINT") is None:
+    env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
+    # Load env settings
+    env_file_path = Path(f"./.env.{env_name}")
+    print(f"Loading environment from: {env_file_path}")
+    with open(env_file_path) as f:
+        dotenv.load_dotenv(dotenv_path=env_file_path)
+    # print(os.environ)
 
 
 def main():

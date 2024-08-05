@@ -6,14 +6,14 @@ from framework.text_loader import *
 import azure.cognitiveservices.speech as speechsdk
 
 
-env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
+# env_name = os.environ["APP_ENV"] if "APP_ENV" in os.environ else "local"
 
-# Load env settings
-env_file_path = Path(f"./.env.{env_name}")
-print(f"Loading environment from: {env_file_path}")
-with open(env_file_path) as f:
-    dotenv.load_dotenv(dotenv_path=env_file_path)
-# print(os.environ)
+# # Load env settings
+# env_file_path = Path(f"./.env.{env_name}")
+# print(f"Loading environment from: {env_file_path}")
+# with open(env_file_path) as f:
+#     dotenv.load_dotenv(dotenv_path=env_file_path)
+# # print(os.environ)
 
 # Set up Azure Speech Service credentials
 speech_key = os.environ["COGNITIVE_MULTISVC_API_KEY"]
