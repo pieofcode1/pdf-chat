@@ -31,14 +31,14 @@ def show_details():
             st.write(f"{st.session_state.agent.blob_url_audio}")
         
         with col_2:
-            st.subheader(f"{len(st.session_state.agent.video_data)}")
             st.write(":blue[Size]")
-        
-            st.subheader(f"{len(st.session_state.agent.video_frames) * st.session_state.agent.fps}")
+            st.subheader(f"{len(st.session_state.agent.video_data)}")
+            
             st.write(":blue[Duration]")
-
+            st.subheader(f"{len(st.session_state.agent.video_frames) * st.session_state.agent.fps}")
+            
+            st.write(":blue[Frame Offset]")
             st.subheader(f"{st.session_state.agent.fps}")
-            st.write(":blue[Frame Rate]")
 
     else:
         st.write("No video data available")

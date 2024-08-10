@@ -1,7 +1,7 @@
-from azure.cosmos import CosmosClient
+from azure.cosmos import CosmosClient, PartitionKey
 from azure.cosmos.diagnostics import RecordDiagnostics
 import azure.cosmos.exceptions as exceptions
-
+from typing import List
 import json
 import time
 from datetime import date, datetime
@@ -26,7 +26,7 @@ class CosmosUtil:
         self.container_map = dict()
 
         self.cosmose_client = CosmosClient(url, credential=key)
-        self.database_client = self.cosmose_client.get_database_client(
+        self.database_client = self.cosmose_client.create_database_if_not_exists(
             self.database_name)
         print(f"Container Name: {container_names}")
         for name in container_names:
@@ -128,3 +128,60 @@ class CosmosUtil:
             print(doc)
 
         print(f'\nFinished reading all the change feed: {cnt}\n')
+
+    def create_vector_embedding_policy(self, field_paths: List):
+        field_embeddings = []
+        for field in field_paths:
+            field_embeddings.append({
+                "path": field,
+                "dataType": "float32", 
+                "distanceFunction": "cosine", 
+                "dimensions": 1536  
+            })
+        vector_embedding_policy = {
+            "vectorEmbeddings": field_embeddings  
+        }
+        return vector_embedding_policy
+
+    def create_indexing_policy(self, field_paths: List):
+        excluded_paths = []
+        excluded_paths.append({ "path": "/\"_etag\"/?"})
+        vector_indexes = []
+        for field in field_paths:
+            excluded_paths.append({ "path": f"{field}/*"})
+            vector_indexes.append({
+                "path": field,
+                "type": "quantizedFlat"
+            })
+
+        indexing_policy = { 
+            "includedPaths": [ 
+                { 
+                    "path": "/*" 
+                } 
+            ], 
+            "excludedPaths": excluded_paths, 
+            "vectorIndexes": vector_indexes
+        }
+        return indexing_policy
+
+
+    def create_container_with_vectors(self, container_name: str, partitionKey: str, vector_fields: List):
+        try:
+            # Vector embedding policy is not allowed on the shared throughput containers
+            container = self.database_client.create_container_if_not_exists(
+                id=container_name,
+                partition_key=PartitionKey(path=partitionKey),
+                vector_embedding_policy=self.create_vector_embedding_policy(vector_fields),
+                indexing_policy=self.create_indexing_policy(vector_fields),
+                offer_throughput=400
+            )
+            self.container_map[container_name] = container
+            return container
+        except exceptions.CosmosResourceExistsError:
+            container = self.database_client.get_container_client(container_name)
+            self.container_map[container_name] = container
+            return container
+        except exceptions.CosmosHttpResponseError:
+            raise
+

@@ -110,7 +110,9 @@ class MediaAssetInfo(BaseModel):
     total_frames: int
     audio_transcription: Optional[str] = None
     audio_summary: Optional[str] = None
+    audio_summary_vector: Optional[List[float]] = None
     video_summary: Optional[str] = None
+    video_summary_vector: Optional[List[float]] = None
     created_at: str = datetime.now().isoformat()
 
 
@@ -121,6 +123,7 @@ class VideoFrameSummary(BaseModel):
     asset_name: str
     url: str
     summary: str = None
+    summary_vector: List[float] = None
     created_at: str = datetime.now().isoformat()
 
 

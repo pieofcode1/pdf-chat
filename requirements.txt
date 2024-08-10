@@ -7,7 +7,7 @@ faiss-cpu
 openai==1.38.0
 langchain==0.2.12
 langchain-community==0.2.11
-langchain-core==0.2.28
+langchain-core==0.2.29
 langchain_experimental==0.0.64
 langchain-openai==0.1.20
 openapi-schema-pydantic==1.2.4

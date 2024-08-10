@@ -79,6 +79,17 @@ DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(
     template="{page_content}")
 
 
+def generate_embeddings(input_text):
+    global embeddings
+    if not embeddings:
+        print("Embeddings not initialized. Initializing now.")
+        return
+    
+    # Generate the embedding
+    embedding_vector = embeddings.embed_query(input_text)
+    return embedding_vector
+
+
 def get_pdf_text(files):
     text = ""
     for f in files:
