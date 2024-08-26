@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 from datetime import datetime
 from typing import Annotated, Dict, List, Literal, Tuple, Optional
 
@@ -122,9 +122,15 @@ class VideoFrameSummary(BaseModel):
     frame_id: int
     asset_name: str
     url: str
-    summary: str = None
-    summary_vector: List[float] = None
+    summary: str = ''
+    summary_vector: List = list()
     created_at: str = datetime.now().isoformat()
+
+    @field_validator('summary_vector')
+    def convert_tuple_to_list(cls, v):
+        if isinstance(v, tuple):
+            return list(v)
+        return v
 
 
 

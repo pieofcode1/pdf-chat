@@ -30,9 +30,11 @@ from langchain_community.agent_toolkits import create_sql_agent
 from langchain.chains import create_sql_query_chain
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 from .prompts import MSSQL_PROMPT
 from .utilities import ChainLogger
+from .storage_helper import StorageHelper
 
 import dotenv
 from .az_ai_search_helper import *
@@ -58,6 +60,17 @@ model: str = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME")
 #     api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
 #     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
 # )
+
+openai_credential = DefaultAzureCredential()
+token_provider = get_bearer_token_provider(openai_credential, "https://cognitiveservices.azure.com/.default")
+
+client = AzureOpenAI(
+    azure_deployment=os.environ["AZURE_EMBEDDING_DEPLOYMENT_NAME"],
+    api_version=os.environ["OPENAI_API_VERSION"],
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key= os.environ["AZURE_OPENAI_API_KEY"]
+)
+
 embeddings: AzureOpenAIEmbeddings = AzureOpenAIEmbeddings(
     azure_deployment=model,
     model=model,
@@ -77,6 +90,13 @@ RETRIEVAL_COUNT = 10
 
 DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(
     template="{page_content}")
+
+
+def vectorize(text):
+    global client
+
+    vector = client.embeddings.create(input=text, model=os.environ["AZURE_EMBEDDING_DEPLOYMENT_NAME"])
+    return vector.data[0].embedding if (vector and vector.data) else None
 
 
 def generate_embeddings(input_text):
@@ -425,3 +445,25 @@ def create_sql_agent_executor(executor_type="db_chain", source="sqldb", verbose=
     return agent_executor
 
 
+def create_cosmos_vector_search_agent(container_names):
+    cosmos_vector_search_agent = CosmosUtil(
+            os.environ["AZURE_COSMOS_ENDPOINT"],
+            os.environ["AZURE_COSMOS_KEY"],
+            os.environ["AZURE_COSMOS_DATABASE_NAME"],
+            os.environ["AZURE_COSMOS_CONTAINER_NAME"]
+        )
+    
+    if container_names:
+        if isinstance(container_names, str):
+            container_names = [container_names]
+        cosmos_vector_search_agent.add_containers(container_names)
+
+    return cosmos_vector_search_agent
+
+
+def create_storage_agent():
+    storage_agent = StorageHelper(
+            os.environ["AZURE_STORAGE_CONNECTION_STRING"],
+            os.environ["AZURE_STORAGE_CONTAINER_NAME"]
+        )
+    return storage_agent

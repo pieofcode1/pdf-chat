@@ -24,6 +24,8 @@ from langchain_community.utilities import BingSearchAPIWrapper
 from azure.search.documents.models import *
 from azure.search.documents.indexes.models import *
 
+from .cosmos_util import CosmosUtil
+
 
 # Load env settings if not already loaded
 if os.getenv("AZURE_OPENAI_ENDPOINT") is None:
@@ -59,6 +61,19 @@ def get_az_search_client():
     return client
 
 
+def get_ai_search_index_client(index_name):
+    endpoint = os.environ["AZURE_SEARCH_SERVICE_ENDPOINT"]
+    key = os.environ["AZURE_SEARCH_ADMIN_KEY"]
+    if index_name is None:
+        raise ValueError("Index name is required")
+    credential = AzureKeyCredential(key)
+
+    client = SearchClient(endpoint=endpoint,
+                          index_name=index_name,
+                          credential=credential)
+    return client
+
+
 def get_az_search_indices():
 
     service_client = get_az_search_index_client()
@@ -67,6 +82,27 @@ def get_az_search_indices():
     names = [x for x in result]
     # names = ["azure-plat-services-vector-search", "langchain-vector-demo"]
     return names
+
+
+# Search for documents using vector search
+def perform_vector_search(client, index_name, vectorized_query, projection=None):
+    
+    # Create a search index
+    vector_query = VectorizedQuery(vector=vectorized_query, k_nearest_neighbors=3, fields="summary_vector")
+
+    results = client.search(  
+        search_text=None,  
+        vector_queries= [vector_query],
+        select=projection,
+    )  
+
+    results = [x for x in results]
+    for result in results:
+        print(f"Score: {result['@search.score']}")  
+        print(f"Result: {result}")  
+        print("..........................................")
+
+    return results
 
 
 def get_index_fields(index_name, embedding_function):
@@ -128,12 +164,12 @@ def create_cogsearch_index(index_name, embeddings):
         index_name=index_name,
         embedding_function=embeddings.embed_query,
         semantic_configuration_name='config',
-        semantic_settings=SemanticSettings(
+        semantic_settings=SemanticSearch(
             default_configuration='config',
             configurations=[
                 SemanticConfiguration(
                     name='config',
-                    prioritized_fields=PrioritizedFields(
+                    prioritized_fields=SemanticPrioritizedFields(
                         title_field=SemanticField(field_name='content'),
                         prioritized_content_fields=[
                             SemanticField(field_name='content')],
@@ -147,6 +183,3 @@ def create_cogsearch_index(index_name, embeddings):
 def create_bing_search_agent():
     bing_search = BingSearchAPIWrapper(k=3)
     return bing_search
-
-
- 

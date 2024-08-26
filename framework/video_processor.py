@@ -7,6 +7,7 @@ import time
 import base64
 import numpy as np
 from .storage_helper import StorageHelper
+from .az_ai_search_helper import *
 from .cosmos_util import CosmosUtil
 from openai import AzureOpenAI
 import requests
@@ -14,7 +15,10 @@ from typing import List
 import urllib.request
 from pydantic import BaseModel
 from .schema import VideoFrameSummary, MediaAssetInfo
-from .text_loader import generate_embeddings
+from .text_loader import generate_embeddings, vectorize
+
+# Set the print options to display 16 decimal points
+np.set_printoptions(precision=16)
 
 
 class VideoProcessingAgent(object):
@@ -40,6 +44,12 @@ class VideoProcessingAgent(object):
         self._init_cosmos_util()
         self._init_storage_helper()
         self._init_openai_client()
+        self.init_search_index_clients()
+
+    def init_search_index_clients(self):
+        self.asset_index_client = get_ai_search_index_client("cc-video-asset-index")
+        self.asset_frames_index_client = get_ai_search_index_client("cc-video-asset-frames-index")
+
         
     def _init_cosmos_util(self):
         self.cosmos_util = CosmosUtil(
@@ -58,10 +68,10 @@ class VideoProcessingAgent(object):
         #       "CC_VideoAssetAudio"])
         
     def _init_storage_helper(self):
-        self.storage_helper = StorageHelper(
-            os.environ["AZURE_STORAGE_CONNECTION_STRING"],
-            os.environ["AZURE_STORAGE_CONTAINER_NAME"]
-        )
+            self.storage_helper = StorageHelper(
+                os.environ["AZURE_STORAGE_CONNECTION_STRING"],
+                os.environ["AZURE_STORAGE_CONTAINER_NAME"]
+            )
 
     def _init_openai_client(self):
         azure_openai_endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
@@ -193,13 +203,15 @@ class VideoProcessingAgent(object):
             total_frames=total_frames,
             audio_transcription=self.audio_transcription,
             audio_summary=self.audio_summary,
-            audio_summary_vector=generate_embeddings(self.audio_summary) if (self.audio_summary) else None,
+            audio_summary_vector=vectorize(self.audio_summary) if (self.audio_summary) else [],
             video_summary=self.video_summary,
-            video_summary_vector=generate_embeddings(self.video_summary) if (self.video_summary) else None,
+            video_summary_vector=vectorize(self.video_summary) if (self.video_summary) else []
         )
         video_asset_dict = video_asset.model_dump()
         self.cosmos_util.upsert_items("CC_VideoAssets", video_asset_dict)
+        self.asset_index_client.upload_documents([video_asset_dict])
 
+        print(f"Video Asset: {video_asset_dict}")
 
         print("Video processing completed.")
         self.is_complete = True
@@ -300,12 +312,14 @@ class VideoProcessingAgent(object):
                 ],
                 temperature=0,
             )
-            previous_context = response.choices[0].message.content
+            previous_context: str = response.choices[0].message.content
             frame_summary.summary = previous_context
-            frame_summary.summary_vector=generate_embeddings(previous_context) if (previous_context) else None,
-            print(f"Frame Summary: {frame_summary.model_dump_json()}")
+            frame_summary.summary_vector=vectorize(previous_context)
             frame_summary_dict = frame_summary.model_dump()
+            print(f"Frame Summary Dict: {frame_summary_dict}")
             self.cosmos_util.upsert_items("CC_VideoAssetFrames", frame_summary_dict)
+            self.asset_frames_index_client.upload_documents([frame_summary_dict])
+
             print(response.choices[0].message.content)
             index += 1
             yield frame_summary

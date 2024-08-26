@@ -165,7 +165,6 @@ class CosmosUtil:
         }
         return indexing_policy
 
-
     def create_container_with_vectors(self, container_name: str, partitionKey: str, vector_fields: List):
         try:
             # Vector embedding policy is not allowed on the shared throughput containers
@@ -185,3 +184,19 @@ class CosmosUtil:
         except exceptions.CosmosHttpResponseError:
             raise
 
+    def search_vector_similarity(self, container_name: str, prompt: list, content_vector_field: str="summary_vector", top: int = 3):
+        container_client = self.container_map[container_name]
+        result = container_client.query_items(
+            query=f"SELECT TOP {top} c.asset_name, VectorDistance(c.{content_vector_field}, @embedding) AS similarity_score FROM c ORDER BY VectorDistance(c.{content_vector_field}, @embedding)",
+            parameters=[
+                {"name":"@embedding", "value": prompt}
+            ],
+            enable_cross_partition_query=True
+        )
+        items = list()
+        for item in result: 
+            print(json.dumps(item, indent=True))
+            items.append(item)
+        
+        return items
+    
