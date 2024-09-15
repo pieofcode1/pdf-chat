@@ -5,12 +5,13 @@ from openai import AzureOpenAI
 import dotenv
 from framework.text_loader import *
 from framework.az_ai_search_helper import *
+from framework.llm_chain_agent import LLMChainAgent
+
 from langchain.schema import (
     AIMessage,
     HumanMessage,
     SystemMessage
 )
-from langchain_chroma import Chroma
 from langchain_community.callbacks import get_openai_callback
 from html_template import css, bot_template, user_template
 
@@ -26,14 +27,13 @@ from html_template import css, bot_template, user_template
 
 def handle_user_input(question):
     with get_openai_callback() as cb:
-        if not st.session_state.has_vectorized_data:
-            st.write(
-                "Please upload your documents and hit Process to build vector store.")
-            return
 
-        response = st.session_state.conversation.invoke({"question": question})
-        st.session_state.chat_history = response['chat_history']
-        # st.write(response)
+        response = st.session_state.conversation.invoke(question)
+        print(response)
+        st.session_state.chat_history = response['history'] if response['history'] != "" else []
+        st.session_state.chat_history.append(HumanMessage(question))
+        st.session_state.chat_history.append(AIMessage(response['response']))
+        
         # print(f"Chat History Type: {type(st.session_state.chat_history)}")
         # for i, message in enumerate(reversed(st.session_state.chat_history)):
         for i, message in enumerate(st.session_state.chat_history):
@@ -66,58 +66,19 @@ def main():
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = None
+        st.session_state.chat_history = []
 
-    if "has_vectorized_data" not in st.session_state:
-        st.session_state.has_vectorized_data = None
-
-    st.header("Chat with your Data (Local Vector Store) :books:", divider='red')
+    st.header("Chat with LLM :books:", divider='red')
     # user_question = st.text_input("Ask a question about your documents")
+
+    if st.session_state.conversation is None:
+        # Get the conversation Chain
+        st.session_state.conversation = LLMChainAgent.get_llm_chain_with_history()
+
     user_question = st.chat_input("Ask a question about your documents")
     if user_question:
         handle_user_input(user_question)
 
-    # st.write(bot_template.replace(
-    #     "{{MSG}}", "Hello Human!"), unsafe_allow_html=True)
-    # st.write(user_template.replace(
-    #     "{{MSG}}", "Hello Bot!"), unsafe_allow_html=True)
-    # with st.chat_message("user"):
-    #     st.write("Hello assistant! 👋")
-    # with st.chat_message("assistant"):
-    #     st.write("Hello human! 👋")
-
-    with st.sidebar:
-        st.subheader("Choose your knowledge base")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process' ", accept_multiple_files=True)
-        if st.button("Process", type="primary"):
-
-            if len(pdf_docs) != 0:
-
-                # process the information from PDFs
-                with st.spinner("Processing"):
-
-                    # Step 1: Get raw contents from PDFs
-                    raw_text = get_pdf_text(pdf_docs)
-
-                    # Step 2: Get the chunks of the text
-                    text_chunks = get_text_chunks(raw_text)
-                    st.write(
-                        f"Total length of the chunks: {len(text_chunks)}")
-                    st.write(text_chunks)
-
-                    # Step 3: Create embeddings and store in Vector store
-                    vector_store = get_vectors(text_chunks)
-
-                    # Step 4: Get conversation chain
-                    st.session_state.conversation = get_conversation_chain(
-                        vector_store=vector_store)
-
-                    st.session_state.has_vectorized_data = True
-
-        # add_sidebar = st.sidebar.selectbox(
-        #     "EDSP Data Science", ('Data Engineering', 'Model Training'))
-
-
+    
 if __name__ == "__main__":
     main()

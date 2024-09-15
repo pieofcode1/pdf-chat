@@ -255,6 +255,19 @@ def get_conversation_chain(vector_store):
     return conversation_chain
 
 
+def get_llm_conversation_chain():
+
+    llm = AzureChatOpenAI(
+        azure_deployment=os.environ["AZURE_CHATGPT_DEPLOYMENT_NAME"],
+        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        openai_api_type="azure",
+        openai_api_version=os.environ["OPENAI_API_VERSION"],
+        openai_api_key=os.environ["AZURE_OPENAI_API_KEY"]
+    )
+
+    return llm
+
+
 def _combine_documents(docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"):
     doc_strings = [format_document(doc, document_prompt) for doc in docs]
     return document_separator.join(doc_strings)
