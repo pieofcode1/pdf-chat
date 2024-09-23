@@ -56,23 +56,6 @@ def main():
 
     st.write("\n\n")
 
-    st.markdown("#### Reference Architecture")
-    st.write(
-        """
-        This is a typical architecture of a RAG based app leveraging Azure Platform Services. 
-        """
-    )
-    tab_text, tab_media, = st.tabs(["Textual", "Audio/Video"])
-
-    with tab_text:
-        
-        st.image("img/arch.png")
-
-    with tab_media:
-        st.image("img/media_arch.png")
-
-    
-
     st.markdown("#### Typical GenAI scenarios")
     st.write(
         """
@@ -83,6 +66,20 @@ def main():
 
     st.write("\n\n")
 
+    st.markdown("#### Reference Architecture")
+    st.write(
+        """
+        This is a typical architecture of a RAG based app leveraging Azure Platform Services. 
+        """
+    )
+    tab_text, tab_media, = st.tabs(["Documents", "Audio/Video"])
+
+    with tab_text:
+        
+        st.image("img/arch.png")
+
+    with tab_media:
+        st.image("img/media_arch.png")
 
 
 if __name__ == "__main__":

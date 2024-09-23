@@ -47,7 +47,7 @@ def main():
 
     st.set_page_config(page_title="Bing Web Search", page_icon=":books:")
 
-    st.title("Azure Speech Service with Streamlit")
+    st.title("Leveraging Azure Speech SDK")
 
     if st.button('Start speech recognition'):
         recognition_result = speech_recognize_once_from_mic()

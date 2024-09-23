@@ -30,3 +30,4 @@ pillow
 faker==26.1.0
 mlflow 
 databricks-sql-connector
+azure-ai-vision-imageanalysis

@@ -68,7 +68,7 @@ def handle_user_input(question):
 def main():
 
     st.set_page_config(page_title="Image Analysis",
-                       page_icon=":books:", layout="wide")
+                       page_icon=":page_with_curl:", layout="wide")
     st.write(css, unsafe_allow_html=True)
 
     # Initialize Session state
@@ -77,7 +77,7 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = list()
 
-    st.header("Chat with your Images :books:", divider='red')
+    st.header("Extract Insights from the doc :page_with_curl:", divider='blue')
 
     # user_question = st.text_input("Ask a question about your documents")
     user_question = st.chat_input("Ask a question about the image")

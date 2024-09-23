@@ -26,18 +26,22 @@ def main():
     if prompt := st.chat_input("Search text"):
         # Create embeddings for the prompt
         print(f"Prompt: {prompt}")
-        query = generate_embeddings(prompt)
-        # response = st.session_state.search_agent.search_vector_similarity("CC_VideoAssetFrames", query, top=1)
-        response = perform_vector_search(
-                            st.session_state.index_client, 
-                            index_name="cc-video-asset-frames-index", 
-                            vectorized_query=query, 
-                            projection=["asset_name", "summary", "frame_id"] 
-            )
+        # query = generate_embeddings(prompt)
+        # Cosmos DB API
+        response = st.session_state.search_agent.vector_search("CC_VideoAssetFrames", "summary_vector", prompt, limit=1)
+        # print(response)
+        # AI Search API
+        # response = perform_vector_search(
+        #                     st.session_state.index_client, 
+        #                     index_name="cc-video-asset-frames-index", 
+        #                     vectorized_query=query, 
+        #                     projection=["asset_name", "summary", "frame_id"] 
+        #     )
         messages.chat_message("user").write(prompt)
         with messages.chat_message("assistant"):
-            asset_name = response[0]['asset_name']
-            ops_info, asset_info = st.session_state.search_agent.query_items("CC_VideoAssets", f"asset_name = '{asset_name}'")
+            asset_name = response[0]['document']['asset_name']
+            asset_info = st.session_state.search_agent.find("CC_VideoAssets", filter={"asset_name": asset_name})
+            print(asset_info)
             # Get the video url
             video_sas_url = st.session_state.storage_agent.generate_blob_sas_token(asset_info[0]['blob_video_key'])
 

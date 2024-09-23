@@ -35,6 +35,8 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from .prompts import MSSQL_PROMPT
 from .utilities import ChainLogger
 from .storage_helper import StorageHelper
+from .cosmos_mongo_util import CosmosMongoClient
+from .llm_chain_agent import AzureOpenAIEmbeddingsAgent, AIVisionEmbeddingsAgent
 
 import dotenv
 from .az_ai_search_helper import *
@@ -458,25 +460,30 @@ def create_sql_agent_executor(executor_type="db_chain", source="sqldb", verbose=
     return agent_executor
 
 
-def create_cosmos_vector_search_agent(container_names):
-    cosmos_vector_search_agent = CosmosUtil(
-            os.environ["AZURE_COSMOS_ENDPOINT"],
-            os.environ["AZURE_COSMOS_KEY"],
-            os.environ["AZURE_COSMOS_DATABASE_NAME"],
-            os.environ["AZURE_COSMOS_CONTAINER_NAME"]
+def create_cosmos_vector_search_agent(container_names, db="ClipCognition", embedding_agent_type="aoai"):
+    if embedding_agent_type == "aoai":
+        embedding_agent = AzureOpenAIEmbeddingsAgent()
+    elif embedding_agent_type == "ai_vision":
+        embedding_agent = AIVisionEmbeddingsAgent()
+    else:
+        raise ValueError(f"Invalid embedding agent type: {embedding_agent_type}")
+
+    cosmos_mongo_client = CosmosMongoClient(
+            os.environ["MONGODB_CONNECTION_STRING"],
+            db,
+            embedding_agent=embedding_agent
         )
-    
-    if container_names:
-        if isinstance(container_names, str):
-            container_names = [container_names]
-        cosmos_vector_search_agent.add_containers(container_names)
+        
+    cosmos_mongo_client.ping()
+    for container_name in container_names:
+        cosmos_mongo_client.get_collection(container_name)
 
-    return cosmos_vector_search_agent
+    return cosmos_mongo_client
 
 
-def create_storage_agent():
+def create_storage_agent(container_name=os.environ["AZURE_STORAGE_CONTAINER_NAME"]):
     storage_agent = StorageHelper(
             os.environ["AZURE_STORAGE_CONNECTION_STRING"],
-            os.environ["AZURE_STORAGE_CONTAINER_NAME"]
+            container_name
         )
     return storage_agent

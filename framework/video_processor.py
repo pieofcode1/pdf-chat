@@ -9,6 +9,8 @@ import numpy as np
 from .storage_helper import StorageHelper
 from .az_ai_search_helper import *
 from .cosmos_util import CosmosUtil
+from .llm_chain_agent import AzureOpenAIEmbeddingsAgent
+from .cosmos_mongo_util import CosmosMongoClient
 from openai import AzureOpenAI
 import requests
 from typing import List
@@ -16,6 +18,7 @@ import urllib.request
 from pydantic import BaseModel
 from .schema import VideoFrameSummary, MediaAssetInfo
 from .text_loader import generate_embeddings, vectorize
+
 
 # Set the print options to display 16 decimal points
 np.set_printoptions(precision=16)
@@ -41,7 +44,8 @@ class VideoProcessingAgent(object):
         self.video_summary: str = None
         self.temp_folder = "./temp/"
 
-        self._init_cosmos_util()
+        # self._init_cosmos_util()
+        self._init_cosmos_mongo_client()
         self._init_storage_helper()
         self._init_openai_client()
         self.init_search_index_clients()
@@ -50,22 +54,36 @@ class VideoProcessingAgent(object):
         self.asset_index_client = get_ai_search_index_client("cc-video-asset-index")
         self.asset_frames_index_client = get_ai_search_index_client("cc-video-asset-frames-index")
 
-        
-    def _init_cosmos_util(self):
-        self.cosmos_util = CosmosUtil(
-            os.environ["AZURE_COSMOS_ENDPOINT"],
-            os.environ["AZURE_COSMOS_KEY"],
-            os.environ["AZURE_COSMOS_DATABASE_NAME"],
-            os.environ["AZURE_COSMOS_CONTAINER_NAME"]
+    def _init_cosmos_mongo_client(self):
+        self.cosmos_mongo_client = CosmosMongoClient(
+            os.environ["MONGODB_CONNECTION_STRING"],
+            "ClipCognition", 
+            embedding_agent=AzureOpenAIEmbeddingsAgent()
         )
+        
+        self.cosmos_mongo_client.ping()
+        self.cosmos_mongo_client.get_collection("CC_VideoAssets")
+        self.cosmos_mongo_client.get_collection("CC_VideoAssetFrames")
+        self.cosmos_mongo_client.create_vector_index("CC_VideoAssets", "audio_summary_vector", "AudioSummaryVectorIndex")
+        self.cosmos_mongo_client.create_vector_index("CC_VideoAssets", "video_summary_vector", "VideoSummaryVectorIndex")
+        self.cosmos_mongo_client.create_vector_index("CC_VideoAssetFrames", "summary_vector", "FrameSummaryVectorIndex")
 
-        # Create the required containers
-        self.cosmos_util.create_container_with_vectors("CC_VideoAssets", "/asset_name", ["/audio_summary_vector", "/video_summary_vector"])
-        self.cosmos_util.create_container_with_vectors("CC_VideoAssetFrames", "/asset_name", ["/summary_vector"])
-        # self.cosmos_util.add_containers([
-        #       "CC_VideoAssets", 
-        #       "CC_VideoAssetFrames", 
-        #       "CC_VideoAssetAudio"])
+
+    # def _init_cosmos_util(self):
+    #     self.cosmos_util = CosmosUtil(
+    #         os.environ["AZURE_COSMOS_ENDPOINT"],
+    #         os.environ["AZURE_COSMOS_KEY"],
+    #         os.environ["AZURE_COSMOS_DATABASE_NAME"],
+    #         os.environ["AZURE_COSMOS_CONTAINER_NAME"]
+    #     )
+
+    #     # Create the required containers
+    #     self.cosmos_util.create_container_with_vectors("CC_VideoAssets", "/asset_name", ["/audio_summary_vector", "/video_summary_vector"])
+    #     self.cosmos_util.create_container_with_vectors("CC_VideoAssetFrames", "/asset_name", ["/summary_vector"])
+    #     # self.cosmos_util.add_containers([
+    #     #       "CC_VideoAssets", 
+    #     #       "CC_VideoAssetFrames", 
+    #     #       "CC_VideoAssetAudio"])
         
     def _init_storage_helper(self):
             self.storage_helper = StorageHelper(
@@ -208,7 +226,8 @@ class VideoProcessingAgent(object):
             video_summary_vector=vectorize(self.video_summary) if (self.video_summary) else []
         )
         video_asset_dict = video_asset.model_dump()
-        self.cosmos_util.upsert_items("CC_VideoAssets", video_asset_dict)
+        # self.cosmos_util.upsert_items("CC_VideoAssets", video_asset_dict)
+        self.cosmos_mongo_client.insert("CC_VideoAssets", video_asset_dict)
         self.asset_index_client.upload_documents([video_asset_dict])
 
         print(f"Video Asset: {video_asset_dict}")
@@ -317,7 +336,8 @@ class VideoProcessingAgent(object):
             frame_summary.summary_vector=vectorize(previous_context)
             frame_summary_dict = frame_summary.model_dump()
             print(f"Frame Summary Dict: {frame_summary_dict}")
-            self.cosmos_util.upsert_items("CC_VideoAssetFrames", frame_summary_dict)
+            # self.cosmos_util.upsert_items("CC_VideoAssetFrames", frame_summary_dict)
+            self.cosmos_mongo_client.insert("CC_VideoAssetFrames", frame_summary_dict)
             self.asset_frames_index_client.upload_documents([frame_summary_dict])
 
             print(response.choices[0].message.content)
