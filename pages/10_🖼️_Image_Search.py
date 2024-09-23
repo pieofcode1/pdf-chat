@@ -6,21 +6,24 @@ import pandas as pd
 from framework.text_loader import *
 
 
-def handle_user_input(question):
-    print(f"Question: {question}")
+def handle_user_input(search_text):
+    print(f"Search Text: {search_text}")
     # Cosmos DB API
-    response = st.session_state.ignite_cosmos_agent.vector_search("Products", "contentVector", question, limit=3)
+    response = st.session_state.ignite_cosmos_agent.vector_search("Products", "contentVector", search_text, limit=3)
     for item in response:
         col1, col2 = st.columns([5, 3])
         with col1:
             image_url = st.session_state.ignite_storage_agent.generate_blob_sas_token(item['document']['key'])
-            st.image(image_url)
+            st.image(image_url, width=400)  
         with col2:
-            st.write(f"Similarity Score: {item['similarityScore']}")
-            st.write(f"Id: {str(item['document']['_id'])}")
-            st.write(f"Name: {item['document']['name']}")
-            st.write(f"Key: {item['document']['key']}")
- 
+            st.write(":blue[Similarity Score]")
+            st.subheader(item['similarityScore'])
+            st.write(":blue[Name]")
+            st.subheader(item['document']['name'])
+            st.write(":blue[Id]")
+            st.subheader(item['document']['_id'])
+            
+
         # st.image(image_url, caption=f"{item['product_name']}", use_column_width=True)
         st.write("--------------------------------------------------")
 
