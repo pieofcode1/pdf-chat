@@ -102,23 +102,41 @@ def main():
 
     st.set_page_config(page_title="ClipCognition", page_icon=":movie_camera:", layout="wide")
 
-    st.markdown("""
-        <style>
-            .appview-container .main .block-container {
-                padding-top: 1rem;  # Adjust this value as needed
-            }
-        </style>
-    """, unsafe_allow_html=True)
+    # st.markdown("""
+    #     <style>
+    #         .appview-container .main .block-container {
+    #             padding-top: 1rem;  # Adjust this value as needed
+    #         }
+    #     </style>
+    # """, unsafe_allow_html=True)
     
     # Initialize Session state
     if "agent" not in st.session_state:
         st.session_state.agent = None
 
-    st.header("Clip Cognition :movie_camera:")
-    st.text("Highlights the cognitive process of understanding video content")
+    if "vector_store" not in st.session_state:
+        st.session_state.vector_store = None
+
+    st.header(":blue[Clip Cognition] :cinema:")
+    st.markdown("##### Cognitive analysis of video content")
     
     # Sidebar configuration
     with st.sidebar:
+        # label, cog = st.columns([3, 1])
+        # with label:
+        #     st.write(f"Selected Vector Store :blue[{st.session_state.vector_store}]")
+        # with cog:
+        #     with st.popover(":gear:"):
+        #         st.session_state.vector_store = st.selectbox(
+        #             "Vector Store",
+        #             ("CosmosDB Mongo vCore", "CosmosDB NoSQL", "AI Search"),
+        #         )
+        
+        st.session_state.vector_store = st.selectbox(
+            ":blue[Vector Store]",
+            options=[vector_store_type.value for vector_store_type in VectorStoreType]
+        )
+
         video_file = st.file_uploader(
             "Upload a video :movie_camera:",
             # type=["mp4, wav"], 
@@ -132,7 +150,7 @@ def main():
             # with st.spinner("Processing..."):
 
             # Step 1: Get raw contents from video
-            st.session_state.agent = VideoProcessingAgent(video_file)
+            st.session_state.agent = VideoProcessingAgent(video_file, vector_store_type=st.session_state.vector_store)
             # To read file as bytes:
             video_data = video_file.getvalue()
             video_file_name = video_file.name

@@ -1,8 +1,10 @@
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from azure.cosmos import CosmosClient, PartitionKey
 from azure.cosmos.diagnostics import RecordDiagnostics
 import azure.cosmos.exceptions as exceptions
 from typing import List
 import json
+import os
 import time
 from datetime import date, datetime
 from faker import Faker
@@ -12,23 +14,39 @@ import random
 
 class CosmosUtil:
 
-    def __init__(self, url, key, database, containers) -> None:
-        self.url = url
-        self.key = key
+    def __init__(self, auth_type="sp", database="", containers=None, embedding_agent=None) -> None:
         self.database_name = database
-
+        self.embedding_agent = embedding_agent
         container_names = list()
-        if type(containers) != list:
-            container_names.append(containers)
-        else:
-            container_names = containers
+        if containers != None:
+            if type(containers) != list:
+                container_names.append(containers)
+            else:
+                container_names = containers
 
         self.container_map = dict()
 
-        self.cosmose_client = CosmosClient(url, credential=key)
-        self.database_client = self.cosmose_client.create_database_if_not_exists(
+        if auth_type == "connection_str":
+            connection_string = os.environ["AZURE_COSMOS_CONNECTION_STRING"]
+            self.cosmos_client = CosmosClient.from_connection_string(connection_string)
+        elif auth_type == "sp":
+            endpoint = os.environ["AZURE_COSMOS_ENDPOINT"]
+            tenant_id = os.environ["SP_TENANT_ID"]
+            client_id = os.environ["SP_CLIENT_ID"]
+            client_secret = os.environ["SP_CLIENT_SECRET"]
+            # credential = DefaultAzureCredential()
+            credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+            self.cosmos_client = CosmosClient(endpoint, credential=credential)
+        else:
+            raise ValueError(f"Invalid authentication type: {auth_type}")
+        
+        if database == "":
+            database = os.environ["AZURE_COSMOS_DATABASE_NAME"]
+
+        self.database_client = self.cosmos_client.create_database_if_not_exists(
             self.database_name)
         print(f"Container Name: {container_names}")
+        
         for name in container_names:
             self.container_map[name] = self.database_client.get_container_client(
                 name)
@@ -63,21 +81,25 @@ class CosmosUtil:
                 "x-ms-request-charge"]
             print(f"Request Charge: {request_charge}")
 
-    def query_items(self, container, predicate):
+    def query_items(self, container, predicate, limit=None):
 
         container_client = self.container_map[container]
+        top_q = ""
+        if limit != None:
+            top_q += f"TOP {limit}"
+
         if (predicate == None or predicate == ""):
-            query = "SELECT * FROM r"
+            query = f"SELECT {top_q} * FROM r"
         else:
             if type(predicate) == dict:
                 predicate_str = ""
                 for key in predicate.keys():
                     predicate_str += f"r.{key} = '{predicate[key]}' AND "
                 predicate_str = predicate_str[:-4]
-                query = f"SELECT * FROM r WHERE {predicate_str}"
+                query = f"SELECT {top_q} * FROM r WHERE {predicate_str}"
             else:
-                query = f"SELECT * FROM r WHERE r.{predicate}"
-
+                query = f"SELECT {top_q} * FROM r WHERE r.{predicate}"
+            
         print(f"Query: {query}")
 
         m = RecordDiagnostics()
@@ -87,30 +109,6 @@ class CosmosUtil:
             response_hook=m
         ))
         # print(f"Here: {items}")
-        ru_consumption = (datetime.now().isoformat(), m.request_charge, float(
-            m.headers["x-ms-request-duration-ms"]))
-
-        return ru_consumption, items
-
-    def query_devices_by_fw_versions(self, container, version):
-        print(self.container_map.keys())
-        container_client = self.container_map[container]
-        # query = f"SELECT VALUE COUNT(1) as DeviceCount, r.FirmwareVersion FROM DeviceState r GROUP BY r.FirmwareVersion"
-        query = f"SELECT * FROM DeviceState r WHERE r.FirmwareVersion = @vesion"
-        print(f"Query: {query}")
-
-        m = RecordDiagnostics()
-        items = list(container_client.query_items(
-            query=query,
-            parameters=[
-                dict(name="@vesion", value=version)
-            ],
-            enable_cross_partition_query=True,
-            response_hook=m
-        ))
-        print(f"Here: {items}, {m.headers}")
-        print(dir(m))
-        print(m.request_charge)
         ru_consumption = (datetime.now().isoformat(), m.request_charge, float(
             m.headers["x-ms-request-duration-ms"]))
 
@@ -184,12 +182,18 @@ class CosmosUtil:
         except exceptions.CosmosHttpResponseError:
             raise
 
-    def search_vector_similarity(self, container_name: str, prompt: list, content_vector_field: str="summary_vector", top: int = 3):
+    def perform_vector_search(self, container_name: str, prompt: str, content_vector_field: str="summary_vector", projection: list = [], limit: int = 3):
         container_client = self.container_map[container_name]
+        prompt_vector = self.embedding_agent.get_text_embeddings(prompt)
+        if len(projection) == 0:
+            projected_fields = "*"
+        else:
+            projected_fields = ", ".join([f"c.{p}" for p in projection])
+
         result = container_client.query_items(
-            query=f"SELECT TOP {top} c.asset_name, VectorDistance(c.{content_vector_field}, @embedding) AS similarity_score FROM c ORDER BY VectorDistance(c.{content_vector_field}, @embedding)",
+            query=f"SELECT TOP {limit} {projected_fields}, VectorDistance(c.{content_vector_field}, @embedding) AS similarity_score FROM c ORDER BY VectorDistance(c.{content_vector_field}, @embedding)",
             parameters=[
-                {"name":"@embedding", "value": prompt}
+                {"name":"@embedding", "value": prompt_vector}
             ],
             enable_cross_partition_query=True
         )

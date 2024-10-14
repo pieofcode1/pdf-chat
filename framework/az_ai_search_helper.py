@@ -74,6 +74,23 @@ def get_ai_search_index_client(index_name):
     return client
 
 
+def get_ai_search_index_clients(index_names):
+    endpoint = os.environ["AZURE_SEARCH_SERVICE_ENDPOINT"]
+    key = os.environ["AZURE_SEARCH_ADMIN_KEY"]
+    if index_names is None or len(index_names) == 0:
+        raise ValueError("Index name is required")
+    credential = AzureKeyCredential(key)
+
+    index_client_map = {}
+    for index_name in index_names:
+        client = SearchClient(endpoint=endpoint,
+                              index_name=index_name,
+                              credential=credential)
+        
+        index_client_map[index_name] = client
+
+    return index_client_map
+
 def get_az_search_indices():
 
     service_client = get_az_search_index_client()
@@ -85,10 +102,10 @@ def get_az_search_indices():
 
 
 # Search for documents using vector search
-def perform_vector_search(client, index_name, vectorized_query, projection=None):
+def perform_vector_search(client, vectorized_query, attr_name: str, projection=None):
     
     # Create a search index
-    vector_query = VectorizedQuery(vector=vectorized_query, k_nearest_neighbors=3, fields="summary_vector")
+    vector_query = VectorizedQuery(vector=vectorized_query, k_nearest_neighbors=3, fields=attr_name)
 
     results = client.search(  
         search_text=None,  
@@ -183,3 +200,123 @@ def create_cogsearch_index(index_name, embeddings):
 def create_bing_search_agent():
     bing_search = BingSearchAPIWrapper(k=3)
     return bing_search
+
+
+def create_clip_cognition_indices():
+    # Create Azure Search indices for Clip Cognition
+    # Create the Azure Search index
+    endpoint = os.environ["AZURE_SEARCH_SERVICE_ENDPOINT"]
+    credential = AzureKeyCredential(os.environ["AZURE_SEARCH_ADMIN_KEY"])
+
+    # Create a search index
+    index_name = "cc-video-asset-index"
+    index_client = SearchIndexClient(endpoint=endpoint, credential=credential)
+
+    fields = [ 
+        SimpleField(name="id", type=SearchFieldDataType.String, key=True, sortable=True, filterable=True, facetable=True),
+        SearchableField(name="asset_name", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
+
+        SimpleField(name="blob_video_key", type=SearchFieldDataType.String),
+        SimpleField(name="blob_audio_key", type=SearchFieldDataType.String),
+        SimpleField(name="blob_video_url", type=SearchFieldDataType.String),
+        SimpleField(name="blob_audio_url", type=SearchFieldDataType.String),
+        SimpleField(name="frame_offset", type=SearchFieldDataType.Int32),
+        SimpleField(name="frame_count", type=SearchFieldDataType.Int32),
+        SimpleField(name="duration", type=SearchFieldDataType.Int32),
+        SimpleField(name="total_frames", type=SearchFieldDataType.Int32),
+
+        SimpleField(name="audio_summary", type=SearchFieldDataType.String),
+        SimpleField(name="audio_transcription", type=SearchFieldDataType.String),
+        SimpleField(name="video_summary", type=SearchFieldDataType.String),
+        SimpleField(name="created_at", type=SearchFieldDataType.String, filterable=True, sortable=True),
+        
+        SearchField(name="audio_summary_vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                    searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
+        SearchField(name="video_summary_vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                    searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
+    ]
+
+    # Configure the vector search configuration  
+    vector_search = VectorSearch(
+        algorithms=[
+            HnswAlgorithmConfiguration(
+                name="myHnsw"
+            )
+        ],
+        profiles=[
+            VectorSearchProfile(
+                name="myHnswProfile",
+                algorithm_configuration_name="myHnsw",
+            )
+        ]
+    )
+
+    # Configure the semantic search configuration
+    semantic_config = SemanticConfiguration(
+        name="my-semantic-config",
+        prioritized_fields=SemanticPrioritizedFields(
+            title_field=SemanticField(field_name="asset_name"),
+            keywords_fields=[SemanticField(field_name="audio_summary"), SemanticField(field_name="video_summary")],
+            content_fields=[SemanticField(field_name="audio_summary"), SemanticField(field_name="video_summary")]
+        )
+    )
+
+    # Create the semantic settings with the configuration
+    semantic_search = SemanticSearch(configurations=[semantic_config])
+
+    # Create the search index with the semantic settings
+    index = SearchIndex(name=index_name, fields=fields,
+                        vector_search=vector_search, semantic_search=semantic_search)
+    result = index_client.create_or_update_index(index)
+    print(f' {result.name} created')
+
+    # Create index for storing video frame summary
+    index_name = "cc-video-asset-frames-index"
+    # Create a search index
+    index_client = SearchIndexClient(endpoint=endpoint, credential=credential)
+    fields = [ 
+        SimpleField(name="id", type=SearchFieldDataType.String, key=True, sortable=True, filterable=True, facetable=True),
+        SearchableField(name="asset_name", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
+
+        SimpleField(name="url", type=SearchFieldDataType.String),
+        SimpleField(name="summary", type=SearchFieldDataType.String),
+        SimpleField(name="frame_id", type=SearchFieldDataType.Int32),
+        SimpleField(name="created_at", type=SearchFieldDataType.String, filterable=True, sortable=True),
+        
+        SearchField(name="summary_vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                    searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile")
+    ]
+
+    # Configure the vector search configuration  
+    vector_search = VectorSearch(
+        algorithms=[
+            HnswAlgorithmConfiguration(
+                name="myHnsw"
+            )
+        ],
+        profiles=[
+            VectorSearchProfile(
+                name="myHnswProfile",
+                algorithm_configuration_name="myHnsw",
+            )
+        ]
+    )
+
+    # Configure the semantic search configuration
+    semantic_config = SemanticConfiguration(
+        name="my-semantic-config",
+        prioritized_fields=SemanticPrioritizedFields(
+            title_field=SemanticField(field_name="asset_name"),
+            keywords_fields=[SemanticField(field_name="summary")],
+            content_fields=[SemanticField(field_name="summary")]
+        )
+    )
+
+    # Create the semantic settings with the configuration
+    semantic_search = SemanticSearch(configurations=[semantic_config])
+
+    # Create the search index with the semantic settings
+    index = SearchIndex(name=index_name, fields=fields,
+                        vector_search=vector_search, semantic_search=semantic_search)
+    result = index_client.create_or_update_index(index)
+    print(f' {result.name} created')

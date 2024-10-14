@@ -9,19 +9,16 @@ from framework.text_loader import *
 def handle_user_input(search_text):
     print(f"Search Text: {search_text}")
     # Cosmos DB API
-    response = st.session_state.ignite_cosmos_agent.vector_search("Products", "contentVector", search_text, limit=3)
+    response = st.session_state.ignite_cosmos_agent.perform_vector_search("Products_HNSW", "contentVector", search_text, limit=3)
     for item in response:
         col1, col2 = st.columns([5, 3])
         with col1:
             image_url = st.session_state.ignite_storage_agent.generate_blob_sas_token(item['document']['key'])
             st.image(image_url, width=400)  
         with col2:
-            st.write(":blue[Similarity Score]")
-            st.subheader(item['similarityScore'])
-            st.write(":blue[Name]")
-            st.subheader(item['document']['name'])
-            st.write(":blue[Id]")
-            st.subheader(item['document']['_id'])
+            st.markdown(f">:blue[Similarity Score] \n > \n >**{item['similarityScore']}**")
+            st.markdown(f"> :blue[Name] \n > \n >**{item['document']['name']}**")
+            st.markdown(f">:blue[Id] \n > \n >**{item['document']['_id']}**")
             
 
         # st.image(image_url, caption=f"{item['product_name']}", use_column_width=True)
@@ -29,7 +26,7 @@ def handle_user_input(search_text):
 
 def main():
 
-    st.set_page_config(page_title="Image Search Result", page_icon=":frame_with_picture:", layout="wide")
+    st.set_page_config(page_title="Image Search", page_icon=":frame_with_picture:", layout="wide")
 
     if "image_data" not in st.session_state:
         st.session_state.image_data = None
@@ -40,9 +37,9 @@ def main():
         st.session_state.ignite_cosmos_agent = None
         st.session_state.ignite_storage_agent = None
 
-    st.header("Image Search :frame_with_picture:", divider='grey')
+    st.header(":red[Image Search] :frame_with_picture:", divider='grey')
     if st.session_state.ignite_cosmos_agent is None:
-        st.session_state.ignite_cosmos_agent = create_cosmos_vector_search_agent(container_names=["Products"], db="IgniteDB", embedding_agent_type="ai_vision")
+        st.session_state.ignite_cosmos_agent = create_cosmos_mongo_vector_search_agent(container_names=["Products_HNSW"], db="IgniteDB", embedding_agent_type="ai_vision")
         st.session_state.ignite_storage_agent = create_storage_agent(container_name="flyer-deals")
 
     

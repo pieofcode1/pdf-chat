@@ -2,6 +2,12 @@ import uuid
 from pydantic import BaseModel, ValidationError, field_validator
 from datetime import datetime
 from typing import Annotated, Dict, List, Literal, Tuple, Optional
+from enum import Enum
+
+class VectorStoreType(str, Enum):
+    CosmosNoSQL = 'CosmosDB NoSQL'
+    CosmosMongoVCore = 'CosmosDB Mongo vCore'
+    AISearch = 'AI Search'
 
 class TokenUsage(BaseModel):
     prompt_tokens: int
@@ -132,6 +138,13 @@ class VideoFrameSummary(BaseModel):
             return list(v)
         return v
 
+
+class VectorSearchItem(BaseModel):
+    similarity_score: float
+    document: dict
+
+class VectorSearchResult(BaseModel):
+    items: List[VectorSearchItem]
 
 
 

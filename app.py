@@ -72,11 +72,15 @@ def main():
         This is a typical architecture of a RAG based app leveraging Azure Platform Services. 
         """
     )
-    tab_text, tab_media, = st.tabs(["Documents", "Audio/Video"])
+    tab_text1, tab_text2, tab_media, = st.tabs(["Unstructured", "Structured", "Audio/Video"])
 
-    with tab_text:
+    with tab_text1:
         
         st.image("img/arch.png")
+    
+    with tab_text2:
+        
+        st.image("img/arch_cosmos.png")
 
     with tab_media:
         st.image("img/media_arch.png")

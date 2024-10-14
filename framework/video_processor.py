@@ -16,8 +16,9 @@ import requests
 from typing import List
 import urllib.request
 from pydantic import BaseModel
-from .schema import VideoFrameSummary, MediaAssetInfo
+from .schema import VideoFrameSummary, MediaAssetInfo, VectorStoreType
 from .text_loader import generate_embeddings, vectorize
+from azure.core.exceptions import ResourceNotFoundError
 
 
 # Set the print options to display 16 decimal points
@@ -25,7 +26,8 @@ np.set_printoptions(precision=16)
 
 
 class VideoProcessingAgent(object):
-    def __init__(self, video_file, fps=5):
+    def __init__(self, video_file, vector_store_type, fps=5):
+        self.vector_store_type = vector_store_type
         self.id = str(uuid.uuid4())
         self.video_data = video_file.getvalue()
         self.audio_data = None
@@ -44,15 +46,42 @@ class VideoProcessingAgent(object):
         self.video_summary: str = None
         self.temp_folder = "./temp/"
 
-        # self._init_cosmos_util()
-        self._init_cosmos_mongo_client()
+        if vector_store_type == VectorStoreType.CosmosNoSQL:
+            print("Initializing CosmosNoSQL as Vector Store")
+            self._init_cosmos_util()
+        elif vector_store_type == VectorStoreType.AISearch:
+            print("Initializing Azure AI Search as Vector Store")
+            self.init_search_index_clients()
+        elif vector_store_type == VectorStoreType.CosmosMongoVCore:
+            print("Initializing CosmosMongoVCore as Vector Store")
+            self._init_cosmos_mongo_client()
+        else:
+            raise ValueError(f"Invalid Vector Store Type: {vector_store_type}")
+
         self._init_storage_helper()
         self._init_openai_client()
-        self.init_search_index_clients()
 
     def init_search_index_clients(self):
+        index_names = get_az_search_indices()
+        print (f"Existing Index Names: {index_names}")
+        if "cc-video-asset-index" not in index_names:
+            print("Creating Clip Cognition Video Asset Index")
+            create_clip_cognition_indices()
+
         self.asset_index_client = get_ai_search_index_client("cc-video-asset-index")
         self.asset_frames_index_client = get_ai_search_index_client("cc-video-asset-frames-index")
+        
+        # try:
+        #     self.asset_index_client = get_ai_search_index_client("cc-video-asset-index")
+        #     self.asset_frames_index_client = get_ai_search_index_client("cc-video-asset-frames-index")
+        # except ResourceNotFoundError as e:
+        #     print(f"Error initializing Azure AI Search Index Clients: {e}")
+        #     create_clip_cognition_indices()
+        #     self.asset_index_client = get_ai_search_index_client("cc-video-asset-index")
+        #     self.asset_frames_index_client = get_ai_search_index_client("cc-video-asset-frames-index")
+        # except Exception as e:
+        #     print(f"Error initializing Azure AI Search Index Clients: {e}")
+        #     raise e
 
     def _init_cosmos_mongo_client(self):
         self.cosmos_mongo_client = CosmosMongoClient(
@@ -69,25 +98,22 @@ class VideoProcessingAgent(object):
         self.cosmos_mongo_client.create_vector_index("CC_VideoAssetFrames", "summary_vector", "FrameSummaryVectorIndex")
 
 
-    # def _init_cosmos_util(self):
-    #     self.cosmos_util = CosmosUtil(
-    #         os.environ["AZURE_COSMOS_ENDPOINT"],
-    #         os.environ["AZURE_COSMOS_KEY"],
-    #         os.environ["AZURE_COSMOS_DATABASE_NAME"],
-    #         os.environ["AZURE_COSMOS_CONTAINER_NAME"]
-    #     )
+    def _init_cosmos_util(self):
+        self.cosmos_util = CosmosUtil(
+            database=os.environ["AZURE_COSMOS_DATABASE_NAME"],
+            embedding_agent=AzureOpenAIEmbeddingsAgent()
+        )
 
-    #     # Create the required containers
-    #     self.cosmos_util.create_container_with_vectors("CC_VideoAssets", "/asset_name", ["/audio_summary_vector", "/video_summary_vector"])
-    #     self.cosmos_util.create_container_with_vectors("CC_VideoAssetFrames", "/asset_name", ["/summary_vector"])
-    #     # self.cosmos_util.add_containers([
-    #     #       "CC_VideoAssets", 
-    #     #       "CC_VideoAssetFrames", 
-    #     #       "CC_VideoAssetAudio"])
+        # Create the required containers
+        self.cosmos_util.create_container_with_vectors("CC_VideoAssets", "/asset_name", ["/audio_summary_vector", "/video_summary_vector"])
+        self.cosmos_util.create_container_with_vectors("CC_VideoAssetFrames", "/asset_name", ["/summary_vector"])
+        # self.cosmos_util.add_containers([
+        #       "CC_VideoAssets", 
+        #       "CC_VideoAssetFrames", 
+        #       "CC_VideoAssetAudio"])
         
     def _init_storage_helper(self):
             self.storage_helper = StorageHelper(
-                os.environ["AZURE_STORAGE_CONNECTION_STRING"],
                 os.environ["AZURE_STORAGE_CONTAINER_NAME"]
             )
 
@@ -141,6 +167,28 @@ class VideoProcessingAgent(object):
         audio_clip = AudioFileClip(audio_data)
 
         return audio
+    
+    def insert_video_asset(self, video_asset_dict):
+
+        if self.vector_store_type == VectorStoreType.CosmosNoSQL:
+            self.cosmos_util.upsert_items("CC_VideoAssets", video_asset_dict)
+        elif self.vector_store_type == VectorStoreType.AISearch:
+            self.asset_index_client.upload_documents([video_asset_dict])
+        elif self.vector_store_type == VectorStoreType.CosmosMongoVCore:
+            self.cosmos_mongo_client.insert("CC_VideoAssets", video_asset_dict)
+        else:
+            raise ValueError(f"Invalid Vector Store Type: {self.vector_store_type}")
+        
+    def insert_video_frame_asset(self, video_asset_frame_dict):
+
+        if self.vector_store_type == VectorStoreType.CosmosNoSQL:
+            self.cosmos_util.upsert_items("CC_VideoAssetFrames", video_asset_frame_dict)
+        elif self.vector_store_type == VectorStoreType.AISearch:
+            self.asset_frames_index_client.upload_documents([video_asset_frame_dict])
+        elif self.vector_store_type == VectorStoreType.CosmosMongoVCore:
+            self.cosmos_mongo_client.insert("CC_VideoAssetFrames", video_asset_frame_dict)
+        else:
+            raise ValueError(f"Invalid Vector Store Type: {self.vector_store_type}")
 
     def process_video(self):
         # base_video_path, _ = os.path.splitext(video_path)
@@ -226,9 +274,9 @@ class VideoProcessingAgent(object):
             video_summary_vector=vectorize(self.video_summary) if (self.video_summary) else []
         )
         video_asset_dict = video_asset.model_dump()
-        # self.cosmos_util.upsert_items("CC_VideoAssets", video_asset_dict)
-        self.cosmos_mongo_client.insert("CC_VideoAssets", video_asset_dict)
-        self.asset_index_client.upload_documents([video_asset_dict])
+
+        # Insert the video asset into the vector store based on the vector store type
+        self.insert_video_asset(video_asset_dict)
 
         print(f"Video Asset: {video_asset_dict}")
 
@@ -336,9 +384,8 @@ class VideoProcessingAgent(object):
             frame_summary.summary_vector=vectorize(previous_context)
             frame_summary_dict = frame_summary.model_dump()
             print(f"Frame Summary Dict: {frame_summary_dict}")
-            # self.cosmos_util.upsert_items("CC_VideoAssetFrames", frame_summary_dict)
-            self.cosmos_mongo_client.insert("CC_VideoAssetFrames", frame_summary_dict)
-            self.asset_frames_index_client.upload_documents([frame_summary_dict])
+            # Insert the video frame asset into the vector store based on the vector store type
+            self.insert_video_frame_asset(frame_summary_dict)
 
             print(response.choices[0].message.content)
             index += 1

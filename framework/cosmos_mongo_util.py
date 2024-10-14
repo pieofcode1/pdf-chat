@@ -5,12 +5,10 @@ from bson import json_util
 
 class CosmosMongoClient:
 
-
     def __init__ (self, altas_uri, dbname, embedding_agent=None):
         self.mongodb_client = MongoClient(altas_uri)
         self.database = self.mongodb_client[dbname]
         self.embedding_agent = embedding_agent
-
 
     ## A quick way to test if we can connect to Atlas instance
     def ping (self):
@@ -38,7 +36,32 @@ class CosmosMongoClient:
         collection = self.database[collection_name]
         return collection
     
-    def create_vector_index (self, collection_name, attr_name, index_name, type="vector-ivf", num_lists=1, similarity="COS", dimensions=1536):
+    def get_indices(self, collection_name):
+        return self.database[collection_name].getIndexes();
+    
+    def create_vector_index (self, collection_name, attr_name, index_name, type="vector-hnsw", num_lists=1, similarity="COS", dimensions=1536):
+        search_options = None
+
+        # Support for HNSW indexes are available for M40 cluster tiers and higher 
+
+        if type == "vector-ivf":
+            search_options = {
+                'kind': type,
+                'numLists': num_lists,
+                'similarity': similarity,
+                'dimensions': dimensions
+            }
+        elif type == "vector-hnsw": 
+            search_options = {
+                'kind': type,
+                'm': 64,
+                'efConstruction': 256,
+                'similarity': similarity,
+                'dimensions': dimensions
+            }
+        else:
+            raise ValueError("Invalid index type. Supported types are 'vector-ivf' and 'vector-hnsw'")
+
         # Create IVF index
         self.database.command({
             'createIndexes': collection_name,
@@ -48,12 +71,7 @@ class CosmosMongoClient:
                     'key': {
                         attr_name: "cosmosSearch"
                     },
-                    'cosmosSearchOptions': {
-                        'kind': type,
-                        'numLists': num_lists,
-                        'similarity': similarity,
-                        'dimensions': dimensions
-                    }
+                    'cosmosSearchOptions': search_options
                 }
             ]
         })
@@ -88,25 +106,33 @@ class CosmosMongoClient:
 
 
     # https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/
-    def vector_search(self, collection_name, attr_name, query, limit=3):
+    def perform_vector_search(self, collection_name, attr_name, prompt, projection: list = [], limit=3):
         collection = self.database[collection_name]
-        embedding_vector = self.embedding_agent.get_text_embeddings(query)
+        embedding_vector = self.embedding_agent.get_text_embeddings(prompt)
+        projected_fields = dict(similarityScore= { "$meta": 'searchScore' })
+        if len(projection) != 0:
+            for field in projection:
+                projected_fields[field] = 1
+        else:
+            projected_fields["document"] = '$ROOT'
+
+        print(f"Projected fields: {projected_fields}")
+
         pipeline = [
                 {
                     "$search": {
                         "cosmosSearch": {
                             "vector": embedding_vector,
                             "path": attr_name,
-                            "k": limit #, "efsearch": 40 # optional for HNSW only 
+                            "k": limit, 
+                            "efsearch": 40 # optional for HNSW only 
                             #"filter": {"title": {"$ne": "Azure Cosmos DB"}}
                         },
                         "returnStoredSource": True 
                     }
                 },
                 {
-                    "$project": { 
-                        'similarityScore': { '$meta': 'searchScore' }, 'document' : '$$ROOT' 
-                    } 
+                    "$project": projected_fields
                 }
             ]
         results = collection.aggregate(pipeline)

@@ -64,8 +64,8 @@ class AIVisionEmbeddingsAgent(BaseEmbeddingAgent):
     
     def get_text_embeddings(self, text):
         # Create a code snippet for calling post api using requests
-        vision_ep = os.environ["AI_VISION_ENDPOINT"]
-        vision_key = os.environ["AI_VISION_API_KEY"]
+        vision_ep = os.environ["COGNITIVE_MULTISVC_ENDPOINT"]
+        vision_key = os.environ["COGNITIVE_MULTISVC_API_KEY"]
 
         operation_name = "vectorizeText"
 
@@ -78,14 +78,14 @@ class AIVisionEmbeddingsAgent(BaseEmbeddingAgent):
             "text": text
         }
         response = requests.post(url, headers=headers, json=data)
-        # print(response.json())
+        print(response.json())
 
         return response.json()["vector"]
     
     def get_image_embeddings(self, blob_image_path):
         # Create a code snippet for calling post api using requests
-        vision_ep = os.environ["AI_VISION_ENDPOINT"]
-        vision_key = os.environ["AI_VISION_API_KEY"]
+        vision_ep = os.environ["COGNITIVE_MULTISVC_ENDPOINT"]
+        vision_key = os.environ["COGNITIVE_MULTISVC_API_KEY"]
 
         operation_name = "vectorizeImage"
 
@@ -100,7 +100,7 @@ class AIVisionEmbeddingsAgent(BaseEmbeddingAgent):
             # "url": f"data:image/jpeg;base64,{b64_encoded_image}"
         }
         response = requests.post(url, headers=headers, json=data)
-        # print(response.json())
+        print(response.json())
 
         return response.json()["vector"]
         

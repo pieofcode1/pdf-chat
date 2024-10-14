@@ -459,8 +459,15 @@ def create_sql_agent_executor(executor_type="db_chain", source="sqldb", verbose=
     
     return agent_executor
 
+def create_cosmos_nosql_vector_search_agent(container_names):
+    cosmos_sql_agent = CosmosUtil(
+            database=os.environ["AZURE_COSMOS_DATABASE_NAME"],
+            containers=container_names,
+            embedding_agent = AzureOpenAIEmbeddingsAgent()
+        )
+    return cosmos_sql_agent
 
-def create_cosmos_vector_search_agent(container_names, db="ClipCognition", embedding_agent_type="aoai"):
+def create_cosmos_mongo_vector_search_agent(container_names, db="ClipCognition", embedding_agent_type="aoai"):
     if embedding_agent_type == "aoai":
         embedding_agent = AzureOpenAIEmbeddingsAgent()
     elif embedding_agent_type == "ai_vision":
@@ -483,7 +490,6 @@ def create_cosmos_vector_search_agent(container_names, db="ClipCognition", embed
 
 def create_storage_agent(container_name=os.environ["AZURE_STORAGE_CONTAINER_NAME"]):
     storage_agent = StorageHelper(
-            os.environ["AZURE_STORAGE_CONNECTION_STRING"],
             container_name
         )
     return storage_agent
