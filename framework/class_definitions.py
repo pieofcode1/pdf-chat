@@ -52,14 +52,16 @@ class CosmosMongoVCoreVectorSearchAgent(VectorSearchAgent):
 class AISearchVectorSearchAgent(VectorSearchAgent):
 
     def __init__(self, index_names: List[str]) -> None:
-        index_names = ["cc-video-asset-index", "cc-video-asset-frames-index"]
-        super().__init__(VectorStoreType.AISearch)
+        self.index_collection_map = {
+            "CC_VideoAssets": "cc-video-asset-index",
+            "CC_VideoAssetFrames": "cc-video-asset-frames-index"
+        }
+        super().__init__(VectorStoreType.AISearch, container_names=index_names)
         self.index_client_map = get_ai_search_index_clients(index_names=index_names)
 
     def perform_vector_search(self, collection_name: str, attr_name: str, query: str, projection: list[str], limit: int) -> VectorSearchResult:
         response = perform_vector_search(
-                            self.index_client_map[collection_name], 
-                            index_name="cc-video-asset-frames-index", 
+                            self.index_client_map[self.index_collection_map[collection_name]], 
                             attr_name=attr_name,
                             vectorized_query=query, 
                             projection=projection 
@@ -80,6 +82,6 @@ class VectorSearchAgentFactory:
         elif vector_store_type == VectorStoreType.CosmosMongoVCore.value:
             return CosmosMongoVCoreVectorSearchAgent()
         elif vector_store_type == VectorStoreType.AISearch.value:
-            return AISearchVectorSearchAgent()
+            return AISearchVectorSearchAgent(index_names=["cc-video-asset-index", "cc-video-asset-frames-index"])
         else:
             raise ValueError(f"Invalid vector store type: {vector_store_type}")

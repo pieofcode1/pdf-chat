@@ -8,6 +8,14 @@ from framework.schema import *
 from framework.class_definitions import *
 
 
+@st.cache_resource
+def create_ignite_search_agent(vector_store_type: str):
+    return VectorSearchAgentFactory.create_vector_search_agent(vector_store_type=vector_store_type)
+
+@st.cache_resource
+def create_ignite_storage_agent():
+    return create_storage_agent()
+
 def perform_vector_search(prompt, limit=1):
 
     projection=["asset_name", "summary", "frame_id"]
@@ -42,13 +50,13 @@ def perform_vector_search(prompt, limit=1):
 
 def main():
 
-    st.set_page_config(page_title="ClipCognition Video RAG", page_icon=":movie_camera:", layout="wide")
+    st.set_page_config(page_title="ClipCognition Video RAG", page_icon=":cinema:", layout="wide")
 
     # Initialize Session state
     if "search_agent" not in st.session_state:
         st.session_state.search_agent = None
         st.session_state.index_client = None
-        st.session_state.storage_agent = create_storage_agent()
+        st.session_state.storage_agent = create_ignite_storage_agent()
 
     
     if "vector_store" not in st.session_state:
@@ -66,7 +74,7 @@ def main():
             options=[vector_store_type.value for vector_store_type in VectorStoreType]
         )
         print(f"Selected Vector Store: {st.session_state.vector_store}")
-        st.session_state.search_agent = VectorSearchAgentFactory.create_vector_search_agent(vector_store_type=st.session_state.vector_store)
+        st.session_state.search_agent = create_ignite_search_agent(vector_store_type=st.session_state.vector_store)
 
     # if st.session_state.search_agent is None:
         # st.session_state.search_agent = VectorSearchAgentFactory.create_vector_search_agent(vector_store_type=st.session_state.vector_store)
@@ -77,27 +85,32 @@ def main():
         # Create embeddings for the prompt
         print(f"Prompt: {prompt}")
         # query = generate_embeddings(prompt)
-        response = perform_vector_search(prompt)
+        response = perform_vector_search(prompt, limit=10)
         # print(response)
+        # with open("./results.json", "w") as f:
+        #     f.write(json.dumps(response))
         messages.chat_message("user").write(prompt)
-        with messages.chat_message("assistant"):
-            asset_name = response[0]['asset_name']
-            asset_info = st.session_state.search_agent.perform_search("CC_VideoAssets", filter={"asset_name": asset_name}, limit=1)
-            print(asset_info)
-            # Get the video url
-            video_sas_url = st.session_state.storage_agent.generate_blob_sas_token(asset_info[0]['blob_video_key'])
+        if len(response) == 0:
+            messages.chat_message("assistant").write("No results found.")
+        else:
+            with messages.chat_message("assistant"):
+                asset_name = response[0]['asset_name']
+                asset_info = st.session_state.search_agent.perform_search("CC_VideoAssets", filter={"asset_name": asset_name}, limit=1)
+                # print(asset_info)
+                # Get the video url
+                video_sas_url = st.session_state.storage_agent.generate_blob_sas_token(asset_info[0]['blob_video_key'])
 
-            asset_info = asset_info[0]
-            keys_to_remove = ['_rid', '_self', '_etag', '_attachments', '_ts', 'video_summary_vector', 'video_summary',  'audio_summary_vector', 'audio_summary', 'audio_transcription']
-            asset_info = {k: v for k, v in asset_info.items() if k not in keys_to_remove}
-            col1, col2 = st.columns([5, 3])
-            with col1:
-                st.video(video_sas_url)
+                asset_info = asset_info[0]
+                keys_to_remove = ['_rid', '_self', '_etag', '_attachments', '_ts', 'video_summary_vector', 'video_summary',  'audio_summary_vector', 'audio_summary', 'audio_transcription']
+                asset_info = {k: v for k, v in asset_info.items() if k not in keys_to_remove}
+                col1, col2 = st.columns([5, 3])
+                with col1:
+                    st.video(video_sas_url)
 
-            with col2:
-                key_value_pairs = [(k, v) for k, v in asset_info.items()]
-                df = pd.DataFrame(key_value_pairs)
-                st.table(df)
+                with col2:
+                    key_value_pairs = [(k, v) for k, v in asset_info.items()]
+                    df = pd.DataFrame(key_value_pairs)
+                    st.table(df)
 
 
 if __name__ == "__main__":

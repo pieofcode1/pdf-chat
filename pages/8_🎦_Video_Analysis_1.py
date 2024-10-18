@@ -76,7 +76,7 @@ def show_video_details():
         
         # process the video
         for summary in st.session_state.agent.summarize_video():
-            print(summary)
+            # print(summary)
             col_left, col_right = st.columns([1,2])
             
             with col_left:
@@ -100,7 +100,7 @@ def show_video_details():
 
 def main():
 
-    st.set_page_config(page_title="ClipCognition", page_icon=":movie_camera:", layout="wide")
+    st.set_page_config(page_title="ClipCognition", page_icon=":cinema:", layout="wide")
 
     # st.markdown("""
     #     <style>

@@ -5,8 +5,9 @@ from typing import Annotated, Dict, List, Literal, Tuple, Optional
 from enum import Enum
 
 class VectorStoreType(str, Enum):
-    CosmosNoSQL = 'CosmosDB NoSQL'
+    
     CosmosMongoVCore = 'CosmosDB Mongo vCore'
+    CosmosNoSQL = 'CosmosDB NoSQL'
     AISearch = 'AI Search'
 
 class TokenUsage(BaseModel):

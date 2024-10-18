@@ -5,11 +5,19 @@ import dotenv
 import pandas as pd
 from framework.text_loader import *
 
+@st.cache_resource
+def create_ignite_cosmos_agent():
+    return create_cosmos_mongo_vector_search_agent(container_names=["Products_HNSW"], db="IgniteDB", embedding_agent_type="ai_vision")
+
+@st.cache_resource
+def create_ignite_storage_agent():
+    return create_storage_agent(container_name="flyer-deals")
 
 def handle_user_input(search_text):
     print(f"Search Text: {search_text}")
     # Cosmos DB API
     response = st.session_state.ignite_cosmos_agent.perform_vector_search("Products_HNSW", "contentVector", search_text, limit=3)
+    # print(response)
     for item in response:
         col1, col2 = st.columns([5, 3])
         with col1:
@@ -39,8 +47,8 @@ def main():
 
     st.header(":red[Image Search] :frame_with_picture:", divider='grey')
     if st.session_state.ignite_cosmos_agent is None:
-        st.session_state.ignite_cosmos_agent = create_cosmos_mongo_vector_search_agent(container_names=["Products_HNSW"], db="IgniteDB", embedding_agent_type="ai_vision")
-        st.session_state.ignite_storage_agent = create_storage_agent(container_name="flyer-deals")
+        st.session_state.ignite_cosmos_agent = create_ignite_cosmos_agent()
+        st.session_state.ignite_storage_agent = create_ignite_storage_agent()
 
     
     with st.sidebar:

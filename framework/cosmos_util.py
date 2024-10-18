@@ -171,7 +171,7 @@ class CosmosUtil:
                 partition_key=PartitionKey(path=partitionKey),
                 vector_embedding_policy=self.create_vector_embedding_policy(vector_fields),
                 indexing_policy=self.create_indexing_policy(vector_fields),
-                offer_throughput=400
+                # offer_throughput=400
             )
             self.container_map[container_name] = container
             return container
@@ -190,10 +190,13 @@ class CosmosUtil:
         else:
             projected_fields = ", ".join([f"c.{p}" for p in projection])
 
+        # query=f"SELECT TOP {limit} {projected_fields}, VectorDistance(c.{content_vector_field}, {prompt_vector}) AS similarity_score FROM c ORDER BY VectorDistance(c.{content_vector_field}, {prompt_vector})"
+        # print(f"Query: {query}")
+        
         result = container_client.query_items(
-            query=f"SELECT TOP {limit} {projected_fields}, VectorDistance(c.{content_vector_field}, @embedding) AS similarity_score FROM c ORDER BY VectorDistance(c.{content_vector_field}, @embedding)",
+            query=f"SELECT TOP {limit} {projected_fields}, VectorDistance(c.{content_vector_field}, @embedding) AS similarity_score FROM c where VectorDistance(c.{content_vector_field}, @embedding) > 0.7 ORDER BY VectorDistance(c.{content_vector_field}, @embedding) ",
             parameters=[
-                {"name":"@embedding", "value": prompt_vector}
+                {"name":"@embedding", "value": prompt_vector},
             ],
             enable_cross_partition_query=True
         )

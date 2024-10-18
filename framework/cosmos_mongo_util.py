@@ -114,7 +114,7 @@ class CosmosMongoClient:
             for field in projection:
                 projected_fields[field] = 1
         else:
-            projected_fields["document"] = '$ROOT'
+            projected_fields["document"] = '$$ROOT'
 
         print(f"Projected fields: {projected_fields}")
 

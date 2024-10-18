@@ -106,14 +106,14 @@ def perform_vector_search(client, vectorized_query, attr_name: str, projection=N
     
     # Create a search index
     vector_query = VectorizedQuery(vector=vectorized_query, k_nearest_neighbors=3, fields=attr_name)
-
+    print(f"Index Client: {client}")
     results = client.search(  
         search_text=None,  
         vector_queries= [vector_query],
         select=projection,
-    )  
-
-    results = [x for x in results]
+    ) 
+    print(f"Results: {results}")
+    # results = [x for x in results]
     for result in results:
         print(f"Score: {result['@search.score']}")  
         print(f"Result: {result}")  
