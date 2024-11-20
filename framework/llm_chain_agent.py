@@ -78,7 +78,7 @@ class AIVisionEmbeddingsAgent(BaseEmbeddingAgent):
             "text": text
         }
         response = requests.post(url, headers=headers, json=data)
-        print(response.json())
+        # print(response.json())
 
         return response.json()["vector"]
     

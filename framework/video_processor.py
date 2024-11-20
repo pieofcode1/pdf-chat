@@ -134,17 +134,19 @@ class VideoProcessingAgent(object):
         )
 
 
-    def upload_blob_from_stream(self, data, key):
+    def upload_blob_from_stream(self, data, key, mime_type=None):
         blob_url = self.storage_helper.upload_blob_from_stream(
             data, 
-            key
+            key,
+            mime_type
         )
         return blob_url
     
-    def upload_blob_from_file(self, file_path, key):
+    def upload_blob_from_file(self, file_path, key, mime_type=None):
         blob_url = self.storage_helper.upload_blob_with_key(
             file_path, 
-            key
+            key,
+            mime_type
         )
         return blob_url
     
@@ -194,7 +196,7 @@ class VideoProcessingAgent(object):
         # base_video_path, _ = os.path.splitext(video_path)
 
         # Upload video to blob storage
-        self.blob_url_video = self.upload_blob_from_stream(self.video_data, self.blob_key_video)
+        self.blob_url_video = self.upload_blob_from_stream(self.video_data, self.blob_key_video, "video/mp4")
 
         video_link = self.storage_helper.generate_blob_sas_token(self.blob_key_video)
         print(f"SAS Token Link: {video_link}")
@@ -240,7 +242,7 @@ class VideoProcessingAgent(object):
             # Get the absolute path
             absolute_path = os.path.abspath(audio_path)
             # Upload audio to blob storage
-            self.blob_url_audio = self.upload_blob_from_file(absolute_path, self.blob_key_audio)
+            self.blob_url_audio = self.upload_blob_from_file(absolute_path, self.blob_key_audio, "audio/mp3")
             self.blob_url_audio_with_sas = self.storage_helper.generate_blob_sas_token(self.blob_key_audio)
             
             print(f"Uploaded audio to {self.blob_url_audio}")
@@ -286,7 +288,7 @@ class VideoProcessingAgent(object):
     def upload_video_frames_to_blob(self, frames):
         for idx, frame in enumerate(frames):
             frame_name = f"{self.blob_key_video_frame}/{idx * self.fps}.png"
-            url = self.upload_blob_from_stream(base64.b64decode(frame), frame_name)
+            url = self.upload_blob_from_stream(base64.b64decode(frame), frame_name, "image/png")
             self.blob_url_frames.append(url)
     
     def create_directory_from_file_path(self, file_path):
@@ -383,11 +385,11 @@ class VideoProcessingAgent(object):
             frame_summary.summary = previous_context
             frame_summary.summary_vector=vectorize(previous_context)
             frame_summary_dict = frame_summary.model_dump()
-            print(f"Frame Summary Dict: {frame_summary_dict}")
+            # print(f"Frame Summary Dict: {frame_summary_dict}")
             # Insert the video frame asset into the vector store based on the vector store type
             self.insert_video_frame_asset(frame_summary_dict)
 
-            print(response.choices[0].message.content)
+            # print(response.choices[0].message.content)
             index += 1
             yield frame_summary
 

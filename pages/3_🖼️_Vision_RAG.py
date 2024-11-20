@@ -42,15 +42,15 @@ def handle_user_input(question):
     })
     # st.write(response)
     # print(f"Chat History Type: {type(st.session_state.chat_history)}")
-    # for i, message in enumerate(reversed(st.session_state.chat_history)):
-    for i, message in enumerate(st.session_state.chat_history):
+    for i, message in enumerate(reversed(st.session_state.chat_history)):
+    # for i, message in enumerate(st.session_state.chat_history):
         print(F"Idx: {i}, Message: {message}")
 
         with st.chat_message("user"):
-            st.write(message['question'])
-
+            st.write(message["question"])
+      
         with st.chat_message("assistant"):
-            st.write(message['answer'])
+            st.write(message["answer"])
 
 
 def main():

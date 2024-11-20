@@ -21,7 +21,7 @@ def perform_vector_search(prompt, limit=1):
     projection=["asset_name", "summary", "frame_id"]
 
     response = st.session_state.search_agent.perform_vector_search("CC_VideoAssetFrames", query=prompt, attr_name="summary_vector", projection=projection, limit=limit)  
-    print(response)
+    # print(response)
 
     # if st.session_state.vector_store == VectorStoreType.CosmosNoSQL.value:
     #     print("Searching in Cosmos DB NoSQL")
@@ -85,7 +85,7 @@ def main():
         # Create embeddings for the prompt
         print(f"Prompt: {prompt}")
         # query = generate_embeddings(prompt)
-        response = perform_vector_search(prompt, limit=10)
+        response = perform_vector_search(prompt, limit=1)
         # print(response)
         # with open("./results.json", "w") as f:
         #     f.write(json.dumps(response))
@@ -96,16 +96,17 @@ def main():
             with messages.chat_message("assistant"):
                 asset_name = response[0]['asset_name']
                 asset_info = st.session_state.search_agent.perform_search("CC_VideoAssets", filter={"asset_name": asset_name}, limit=1)
-                # print(asset_info)
+                print(asset_info)
                 # Get the video url
                 video_sas_url = st.session_state.storage_agent.generate_blob_sas_token(asset_info[0]['blob_video_key'])
-
+                print(f"Asset URL: {video_sas_url}")
                 asset_info = asset_info[0]
-                keys_to_remove = ['_rid', '_self', '_etag', '_attachments', '_ts', 'video_summary_vector', 'video_summary',  'audio_summary_vector', 'audio_summary', 'audio_transcription']
+                keys_to_remove = ['_id', '_rid', '_self', '_etag', '_attachments', '_ts', 'video_summary_vector', 'video_summary',  'audio_summary_vector', 'audio_summary', 'audio_transcription']
                 asset_info = {k: v for k, v in asset_info.items() if k not in keys_to_remove}
                 col1, col2 = st.columns([5, 3])
                 with col1:
                     st.video(video_sas_url)
+                    # st.markdown(video_sas_url)
 
                 with col2:
                     key_value_pairs = [(k, v) for k, v in asset_info.items()]

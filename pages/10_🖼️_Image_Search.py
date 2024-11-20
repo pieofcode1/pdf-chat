@@ -1,9 +1,11 @@
 import os
 import streamlit as st
 from pathlib import Path
+import numpy as np  
+import urllib.request
 import dotenv
 import pandas as pd
-from framework.text_loader import *
+from framework.text_loader import * 
 
 @st.cache_resource
 def create_ignite_cosmos_agent():
@@ -22,7 +24,11 @@ def handle_user_input(search_text):
         col1, col2 = st.columns([5, 3])
         with col1:
             image_url = st.session_state.ignite_storage_agent.generate_blob_sas_token(item['document']['key'])
+            print(f"Asset URL: {image_url}")
+            # resp = urllib.request.urlopen(image_url)
+            # image = np.asarray(bytearray(resp.read()), dtype="uint8")
             st.image(image_url, width=400)  
+            # st.markdown(image_url)
         with col2:
             st.markdown(f">:blue[Similarity Score] \n > \n >**{item['similarityScore']}**")
             st.markdown(f"> :blue[Name] \n > \n >**{item['document']['name']}**")

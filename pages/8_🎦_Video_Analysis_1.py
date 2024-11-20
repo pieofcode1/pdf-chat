@@ -48,10 +48,10 @@ def show_audio_details():
     if st.session_state.agent is not None and st.session_state.agent.blob_url_audio is not None:
 
         st.subheader("Audio Details")
-        st.write(f"Audio URL: {st.session_state.agent.blob_key_audio}")
+        st.write(f"Audio URL: {st.session_state.agent.blob_url_audio}")
 
         # get audio url with SAS token 
-        st.audio(st.session_state.agent.blob_url_audio_with_sas, format="audio/wav")
+        st.audio(st.session_state.agent.blob_url_audio_with_sas, format="audio/mp3")
 
         with st.expander(":blue[Transcription]"):
             st.markdown(st.session_state.agent.audio_transcription)
@@ -143,6 +143,7 @@ def main():
             accept_multiple_files=False, 
             label_visibility="visible"
         )
+        frame_offset = st.slider("Frame offset", 1, 10, 5)
 
         if video_file != None:
 
@@ -150,7 +151,7 @@ def main():
             # with st.spinner("Processing..."):
 
             # Step 1: Get raw contents from video
-            st.session_state.agent = VideoProcessingAgent(video_file, vector_store_type=st.session_state.vector_store)
+            st.session_state.agent = VideoProcessingAgent(video_file, vector_store_type=st.session_state.vector_store, fps=frame_offset)
             # To read file as bytes:
             video_data = video_file.getvalue()
             video_file_name = video_file.name

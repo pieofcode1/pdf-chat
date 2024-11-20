@@ -1,6 +1,6 @@
 import os
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, ContentSettings
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
 from datetime import datetime, timezone, timedelta
 from azure.storage.blob import ResourceTypes, AccountSasPermissions, generate_blob_sas, generate_account_sas
@@ -30,22 +30,42 @@ class StorageHelper(object):
             print(f"Container [{container_name}] already created!")
             pass
 
-    def upload_blob(self, file): 
+    def upload_blob(self, file, mime_type=None): 
         # Upload a blob to the container
+        content_settings = None
+        
+        if mime_type:
+            # Define the content settings with the MIME type 
+            content_settings = ContentSettings(content_type=mime_type)
 
         with open(file, "rb") as data:
-            blob_client = self.container_client.upload_blob(name=os.path.basename(file), data=data, overwrite=True)
+            blob_client = self.container_client.upload_blob(name=os.path.basename(file), data=data, overwrite=True, content_settings=content_settings)
+            # blob_client = self.container_client.upload_blob(name=os.path.basename(file), data=data, overwrite=True)
             return blob_client.url
 
-    def upload_blob_with_key(self, file, blob_key):
+    def upload_blob_with_key(self, file, blob_key, mime_type=None):
+
+        content_settings = None
+        if mime_type:
+            # Define the content settings with the MIME type 
+            content_settings = ContentSettings(content_type=mime_type)
+
         # Upload a blob to the container with a specified key
         with open(file, "rb") as data:
-            blob_client = self.container_client.upload_blob(name=blob_key, data=data, overwrite=True)
+            blob_client = self.container_client.upload_blob(name=blob_key, data=data, overwrite=True, content_settings=content_settings)
+            # blob_client = self.container_client.upload_blob(name=blob_key, data=data, overwrite=True)
             return blob_client.url
 
-    def upload_blob_from_stream(self, stream, blob_key):
+    def upload_blob_from_stream(self, stream, blob_key, mime_type=None):
+
+        content_settings = None
+        if mime_type:
+            # Define the content settings with the MIME type 
+            content_settings = ContentSettings(content_type=mime_type)
+
         # Upload a blob to the container from a stream
-        blob_client = self.container_client.upload_blob(name=blob_key, data=stream, overwrite=True)
+        blob_client = self.container_client.upload_blob(name=blob_key, data=stream, overwrite=True, content_settings=content_settings)
+        # blob_client = self.container_client.upload_blob(name=blob_key, data=stream, overwrite=True)
         return blob_client.url
 
     def download_blob(self, blob_key, file_path):
